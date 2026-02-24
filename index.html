@@ -2,7 +2,7 @@
 <html lang="es">
 <head>
 <meta charset="UTF-8">
-<title>Formulario de Retorno - ANAM</title>
+<title>Formulario Institucional - ANAM</title>
 
 <style>
 body {
@@ -18,7 +18,7 @@ body {
     margin: auto;
     border-radius: 8px;
     box-shadow: 0 0 20px rgba(0,0,0,0.08);
-    border-top: 8px solid #6A0F49; /* vino institucional */
+    border-top: 8px solid #6A0F49;
 }
 
 .header {
@@ -27,7 +27,7 @@ body {
 }
 
 .header img {
-    max-height: 80px;
+    max-height: 90px;
 }
 
 .header h2 {
@@ -44,7 +44,6 @@ body {
 
 label {
     font-weight: 600;
-    color: #333;
 }
 
 select, textarea, input {
@@ -67,7 +66,12 @@ button {
     border-radius: 4px;
 }
 
-button:hover {
+button:disabled {
+    opacity: 0.5;
+    cursor: not-allowed;
+}
+
+button:hover:enabled {
     background-color: #4e0b36;
 }
 
@@ -82,7 +86,7 @@ button:hover {
 <div class="container">
 
 <div class="header">
-    <img src="logo.png" alt="Logo ANAM">
+    <img src="https://upload.wikimedia.org/wikipedia/commons/5/5c/Logo_Agencia_Nacional_de_Aduanas_de_M%C3%A9xico.svg">
     <h2>Formulario Institucional de Retorno</h2>
 </div>
 
@@ -92,6 +96,13 @@ button:hover {
 </div>
 
 <form id="formRetorno">
+
+<label>Tipo de Operación:</label>
+<select id="operacion" required>
+    <option value="">-- Seleccione --</option>
+    <option value="IMPORTACION">Importación</option>
+    <option value="EXPORTACION">Exportación</option>
+</select>
 
 <label>Nombre del Operador en Turno:</label>
 <input type="text" id="operador" required>
@@ -107,19 +118,67 @@ button:hover {
 </select>
 
 <label>Placa(s) del vehículo:</label>
-<textarea id="placas" placeholder="Puede separar con coma, espacio o salto de línea" required></textarea>
+<textarea id="placas" required></textarea>
 
 <div id="mercanciaDiv" class="hidden">
     <label>Tipo de Mercancía / Descripción:</label>
     <textarea id="mercancia"></textarea>
 </div>
 
-<button type="submit">Enviar Correo</button>
+<label>Enviar correo usando:</label>
+<select id="modoEnvio" required>
+    <option value="">-- Seleccione --</option>
+    <option value="web">Outlook Web</option>
+    <option value="app">Aplicación Outlook</option>
+</select>
+
+<button type="submit" disabled>Generar Vista Previa</button>
 
 </form>
 </div>
 
+<!-- MODAL PREVIEW -->
+<div id="previewModal" class="hidden" style="
+position: fixed;
+top:0;
+left:0;
+width:100%;
+height:100%;
+background: rgba(0,0,0,0.6);
+display:flex;
+justify-content:center;
+align-items:center;">
+
+<div style="
+background:white;
+width:90%;
+max-width:700px;
+padding:20px;
+border-radius:8px;
+max-height:80%;
+overflow:auto;">
+
+<h3>Vista Previa del Correo</h3>
+
+<p><strong>Para:</strong></p>
+<div id="previewDestinatarios" style="background:#f1f1f1;padding:10px;margin-bottom:15px;"></div>
+
+<p><strong>Asunto:</strong></p>
+<div id="previewAsunto" style="background:#f1f1f1;padding:10px;margin-bottom:15px;"></div>
+
+<p><strong>Cuerpo:</strong></p>
+<pre id="previewCuerpo" style="background:#f7f7f7;padding:10px;white-space:pre-wrap;"></pre>
+
+<button onclick="enviarCorreoConfirmado()">Confirmar y Abrir Outlook</button>
+<button onclick="cerrarPreview()" style="background:#999;margin-top:10px;">Cancelar</button>
+
+</div>
+</div>
+
 <script>
+
+const destinatarios = "jorge.silva@anam.gob.mx;vyc.altamira@anam.gob.mx;alejandra.munoz@anam.gob.mx;nayely.chavez@anam.gob.mx;miguel.herrera@anam.gob.mx;abraham.gomez@anam.gob.mx;daniel.santosh@anam.gob.mx;christian.monrreal@anam.gob.mx;monica.becerra@anam.gob.mx;anahi.santiago@anam.gob.mx";
+
 function generarFolio() {
     const hoy = new Date();
     const fechaBase = hoy.getFullYear().toString() +
@@ -131,7 +190,6 @@ function generarFolio() {
     else contador = parseInt(contador) + 1;
 
     localStorage.setItem("contador_" + fechaBase, contador);
-
     return "RET-" + fechaBase + "-" + String(contador).padStart(3,'0');
 }
 
@@ -156,43 +214,47 @@ actualizarFechaHora();
 setInterval(actualizarFechaHora, 1000);
 inicializarFolio();
 
-// Autodetectar nombre del usuario del navegador
-document.getElementById("operador").value = navigator.userAgentData?.platform || "";
-
-// Mostrar campo mercancía
-document.getElementById("tipo").addEventListener("change", function() {
-    if (this.value === "Solicitud de Revisión De Mercancía Sobre-Dimensionada") {
-        document.getElementById("mercanciaDiv").classList.remove("hidden");
-    } else {
-        document.getElementById("mercanciaDiv").classList.add("hidden");
-    }
+document.getElementById("operacion").addEventListener("change", function() {
+    const container = document.querySelector(".container");
+    if (this.value === "IMPORTACION") container.style.borderTop = "8px solid #0055A4";
+    else if (this.value === "EXPORTACION") container.style.borderTop = "8px solid #0A7F3F";
+    else container.style.borderTop = "8px solid #6A0F49";
 });
 
-document.getElementById("formRetorno").addEventListener("submit", function(e) {
+document.getElementById("placas").addEventListener("input", function() {
+    this.value = this.value.toUpperCase();
+});
+
+document.getElementById("tipo").addEventListener("change", function() {
+    if (this.value === "Solicitud de Revisión De Mercancía Sobre-Dimensionada")
+        document.getElementById("mercanciaDiv").classList.remove("hidden");
+    else
+        document.getElementById("mercanciaDiv").classList.add("hidden");
+});
+
+function validarFormulario() {
+    const campos = document.querySelectorAll("#formRetorno select, #formRetorno input, #formRetorno textarea");
+    let completo = true;
+    campos.forEach(c => {
+        if (c.hasAttribute("required") && c.value.trim() === "") completo = false;
+    });
+    document.querySelector("button").disabled = !completo;
+}
+
+document.querySelectorAll("input, select, textarea").forEach(c => {
+    c.addEventListener("input", validarFormulario);
+    c.addEventListener("change", validarFormulario);
+});
+
+document.getElementById("formRetorno").addEventListener("submit", function(e){
     e.preventDefault();
 
+    const operacion = document.getElementById("operacion").value;
     const operador = document.getElementById("operador").value.trim();
     const tipo = document.getElementById("tipo").value;
-    let placas = document.getElementById("placas").value.trim();
+    const placas = document.getElementById("placas").value.trim();
     const mercancia = document.getElementById("mercancia").value.trim();
-
-    if (!operador || !tipo || !placas) {
-        alert("Todos los campos obligatorios deben llenarse.");
-        return;
-    }
-
-    if (tipo === "Solicitud de Revisión De Mercancía Sobre-Dimensionada" && !mercancia) {
-        alert("Debe ingresar la descripción de la mercancía.");
-        return;
-    }
-
-    // Separación automática por renglón
-    placas = placas
-        .replace(/,/g, '\n')
-        .replace(/\s+/g, '\n')
-        .split('\n')
-        .filter(p => p.trim() !== "")
-        .join('\n');
+    const modoEnvio = document.getElementById("modoEnvio").value;
 
     const folio = generarFolio();
     document.getElementById("folio").textContent = folio;
@@ -200,33 +262,48 @@ document.getElementById("formRetorno").addEventListener("submit", function(e) {
     let cuerpo =
 `FOLIO: ${folio}
 Fecha y Hora: ${document.getElementById("fechaHora").textContent}
+Operación: ${operacion}
 Operador en Turno: ${operador}
 
 Tipo de Solicitud:
 ${tipo}
 
 Placa(s):
-${placas}
-`;
+${placas}`;
 
-    if (tipo === "Solicitud de Revisión De Mercancía Sobre-Dimensionada") {
-        cuerpo += `
+    if (tipo === "Solicitud de Revisión De Mercancía Sobre-Dimensionada")
+        cuerpo += `\n\nTipo de Mercancía:\n${mercancia}`;
 
-Tipo de Mercancía:
-${mercancia}
-`;
+    const asunto = operacion + " - " + tipo;
+
+    window.asuntoGlobal = asunto;
+    window.cuerpoGlobal = cuerpo;
+    window.modoEnvioGlobal = modoEnvio;
+
+    document.getElementById("previewDestinatarios").textContent = destinatarios;
+    document.getElementById("previewAsunto").textContent = asunto;
+    document.getElementById("previewCuerpo").textContent = cuerpo;
+    document.getElementById("previewModal").classList.remove("hidden");
+});
+
+function cerrarPreview(){
+    document.getElementById("previewModal").classList.add("hidden");
+}
+
+function enviarCorreoConfirmado(){
+    let enlace;
+
+    if (window.modoEnvioGlobal === "web") {
+        enlace = `https://outlook.office.com/mail/deeplink/compose?to=${encodeURIComponent(destinatarios)}&subject=${encodeURIComponent(window.asuntoGlobal)}&body=${encodeURIComponent(window.cuerpoGlobal)}`;
+    } else {
+        enlace = `mailto:${destinatarios}?subject=${encodeURIComponent(window.asuntoGlobal)}&body=${encodeURIComponent(window.cuerpoGlobal)}`;
     }
 
-    const destinatarios = "jorge.silva@anam.gob.mx;vyc.altamira@anam.gob.mx;alejandra.munoz@anam.gob.mx;nayely.chavez@anam.gob.mx;miguel.herrera@anam.gob.mx;abraham.gomez@anam.gob.mx;daniel.santosh@anam.gob.mx;christian.monrreal@anam.gob.mx;monica.becerra@anam.gob.mx;anahi.santiago@anam.gob.mx";
-
-    const mailtoLink = `https://outlook.office.com/mail/deeplink/compose?to=${encodeURIComponent(destinatarios)}&subject=${encodeURIComponent(tipo)}&body=${encodeURIComponent(cuerpo)}`;
-
-    window.open(mailtoLink, '_blank');
-
-    this.reset();
-    document.getElementById("mercanciaDiv").classList.add("hidden");
+    window.open(enlace, '_blank');
+    cerrarPreview();
+    document.getElementById("formRetorno").reset();
     inicializarFolio();
-});
+}
 </script>
 
 </body>
