@@ -75,9 +75,51 @@ button:hover:enabled {
     background-color: #4e0b36;
 }
 
-.hidden {
-    display: none;
+.hidden { display: none; }
+
+/* MODAL */
+.modal {
+    position: fixed;
+    inset: 0;
+    background: rgba(0,0,0,0.5);
+    display:flex;
+    justify-content:center;
+    align-items:center;
+    z-index:1000;
 }
+
+.modal-box {
+    background:white;
+    padding:30px;
+    border-radius:10px;
+    width:90%;
+    max-width:400px;
+    text-align:center;
+    box-shadow:0 10px 30px rgba(0,0,0,0.15);
+}
+
+.modal-box h3 {
+    color:#6A0F49;
+    margin-bottom:10px;
+}
+
+.modal-box p {
+    margin-bottom:20px;
+}
+
+.modal-box button {
+    width:100%;
+    margin-bottom:12px;
+}
+
+.btn-web { background:#0078D4; }
+.btn-web:hover { background:#005a9e; }
+
+.btn-app { background:#6A0F49; }
+.btn-app:hover { background:#4e0b36; }
+
+.btn-cancelar { background:#999; }
+.btn-cancelar:hover { background:#777; }
 </style>
 </head>
 
@@ -118,61 +160,27 @@ button:hover:enabled {
 </select>
 
 <label>Placa(s) del vehículo:</label>
-<textarea id="placas" required></textarea>
+<input type="text" id="placas" required>
 
 <div id="mercanciaDiv" class="hidden">
     <label>Tipo de Mercancía / Descripción:</label>
     <textarea id="mercancia"></textarea>
 </div>
 
-<label>Enviar correo usando:</label>
-<select id="modoEnvio" required>
-    <option value="">-- Seleccione --</option>
-    <option value="web">Outlook Web</option>
-    <option value="app">Aplicación Outlook</option>
-</select>
-
-<button type="submit" disabled>Generar Vista Previa</button>
+<button type="submit" disabled>Generar Correo</button>
 
 </form>
 </div>
 
 <!-- MODAL -->
-<div id="previewModal" class="hidden" style="
-position: fixed;
-top:0;
-left:0;
-width:100%;
-height:100%;
-background: rgba(0,0,0,0.6);
-display:flex;
-justify-content:center;
-align-items:center;">
-
-<div style="
-background:white;
-width:90%;
-max-width:700px;
-padding:20px;
-border-radius:8px;
-max-height:80%;
-overflow:auto;">
-
-<h3>Vista Previa del Correo</h3>
-
-<p><strong>Para:</strong></p>
-<div id="previewDestinatarios" style="background:#f1f1f1;padding:10px;margin-bottom:15px;"></div>
-
-<p><strong>Asunto:</strong></p>
-<div id="previewAsunto" style="background:#f1f1f1;padding:10px;margin-bottom:15px;"></div>
-
-<p><strong>Cuerpo:</strong></p>
-<pre id="previewCuerpo" style="background:#f7f7f7;padding:10px;white-space:pre-wrap;"></pre>
-
-<button type="button" onclick="enviarCorreoConfirmado()">Confirmar y Abrir Outlook</button>
-<button type="button" onclick="cerrarPreview()" style="background:#999;margin-top:10px;">Cancelar</button>
-
-</div>
+<div id="modalEnvio" class="hidden modal">
+    <div class="modal-box">
+        <h3>Seleccione método de envío</h3>
+        <p>¿Cómo desea abrir el correo institucional?</p>
+        <button type="button" class="btn-web" onclick="abrirCorreo('web')">Outlook Web</button>
+        <button type="button" class="btn-app" onclick="abrirCorreo('app')">Aplicación Outlook</button>
+        <button type="button" class="btn-cancelar" onclick="cerrarModalEnvio()">Cancelar</button>
+    </div>
 </div>
 
 <script>
@@ -193,73 +201,51 @@ const destinatarios = [
 
 const form = document.getElementById("formRetorno");
 const submitBtn = form.querySelector("button[type='submit']");
-const previewModal = document.getElementById("previewModal");
+const operacionEl = document.getElementById("operacion");
+const operadorEl = document.getElementById("operador");
+const tipoEl = document.getElementById("tipo");
+const placasEl = document.getElementById("placas");
+const mercanciaDiv = document.getElementById("mercanciaDiv");
+const mercanciaEl = document.getElementById("mercancia");
 
-let estadoCorreo = {};
-let folioBloqueado = false;
+let datosCorreo = {};
+let envioEnProceso = false;
 
-// ===== UTILIDADES =====
-
-function obtenerFechaBase(){
-    const hoy = new Date();
-    return hoy.getFullYear().toString() +
-        ("0"+(hoy.getMonth()+1)).slice(-2) +
-        ("0"+hoy.getDate()).slice(-2);
-}
-
-function generarFolio(){
-    const fechaBase = obtenerFechaBase();
-    let contador = localStorage.getItem("contador_"+fechaBase);
-    contador = contador ? parseInt(contador)+1 : 1;
-    localStorage.setItem("contador_"+fechaBase, contador);
-    return `RET-${fechaBase}-${String(contador).padStart(3,'0')}`;
-}
-
-function inicializarFolio(){
-    const fechaBase = obtenerFechaBase();
-    let contador = localStorage.getItem("contador_"+fechaBase);
-    contador = contador ? parseInt(contador)+1 : 1;
-    document.getElementById("folio").textContent =
-        `RET-${fechaBase}-${String(contador).padStart(3,'0')}`;
-}
-
+/* FECHA */
 function actualizarFechaHora(){
     document.getElementById("fechaHora").textContent =
         new Date().toLocaleString();
 }
 
-// ===== VALIDACIÓN =====
+/* FOLIO ÚNICO GLOBAL */
+function generarFolioUnico(){
+    const hoy = new Date();
+    const fechaBase =
+        hoy.getFullYear().toString() +
+        ("0"+(hoy.getMonth()+1)).slice(-2) +
+        ("0"+hoy.getDate()).slice(-2);
 
+    let contadorGlobal = localStorage.getItem("contador_global");
+    contadorGlobal = contadorGlobal ? parseInt(contadorGlobal)+1 : 1;
+    localStorage.setItem("contador_global", contadorGlobal);
+
+    return `RET-${fechaBase}-${String(contadorGlobal).padStart(6,'0')}`;
+}
+
+/* VALIDACIÓN */
 function validarFormulario(){
-    const operacion = operacionEl.value.trim();
-    const operador = operadorEl.value.trim();
-    const tipo = tipoEl.value.trim();
-    const placas = placasEl.value.trim();
-    const modoEnvio = modoEnvioEl.value.trim();
-    const mercanciaVisible = !mercanciaDiv.classList.contains("hidden");
-    const mercancia = mercanciaEl.value.trim();
-
-    let valido = operacion && operador && tipo && placas && modoEnvio;
-
-    if(mercanciaVisible && !mercancia) valido = false;
+    const valido =
+        operacionEl.value &&
+        operadorEl.value &&
+        tipoEl.value &&
+        placasEl.value &&
+        (!mercanciaDiv.classList.contains("hidden") ? mercanciaEl.value : true);
 
     submitBtn.disabled = !valido;
 }
 
-const operacionEl = document.getElementById("operacion");
-const operadorEl = document.getElementById("operador");
-const tipoEl = document.getElementById("tipo");
-const placasEl = document.getElementById("placas");
-const modoEnvioEl = document.getElementById("modoEnvio");
-const mercanciaDiv = document.getElementById("mercanciaDiv");
-const mercanciaEl = document.getElementById("mercancia");
-
 form.addEventListener("input", validarFormulario);
 form.addEventListener("change", validarFormulario);
-
-placasEl.addEventListener("input", function(){
-    this.value = this.value.toUpperCase();
-});
 
 tipoEl.addEventListener("change", function(){
     mercanciaDiv.classList.toggle(
@@ -269,25 +255,20 @@ tipoEl.addEventListener("change", function(){
     validarFormulario();
 });
 
-// ===== SUBMIT =====
+placasEl.addEventListener("input", function(){
+    this.value = this.value.toUpperCase();
+});
 
+/* SUBMIT */
 form.addEventListener("submit", function(e){
     e.preventDefault();
+    if(envioEnProceso) return;
 
-    if(folioBloqueado){
-        alert("Ya existe un folio en proceso.");
-        return;
-    }
-
-    if(submitBtn.disabled){
-        alert("Complete todos los campos.");
-        return;
-    }
-
-    folioBloqueado = true;
+    envioEnProceso = true;
     submitBtn.disabled = true;
 
-    const folio = generarFolio();
+    actualizarFechaHora();
+    const folio = generarFolioUnico();
     document.getElementById("folio").textContent = folio;
 
     let cuerpo =
@@ -309,61 +290,50 @@ Tipo de Mercancía:
 ${mercanciaEl.value}`;
     }
 
-    estadoCorreo = {
+    datosCorreo = {
         asunto: `${operacionEl.value} - ${tipoEl.value}`,
-        cuerpo: cuerpo,
-        modoEnvio: modoEnvioEl.value
+        cuerpo: cuerpo
     };
 
-    document.getElementById("previewDestinatarios").textContent =
-        destinatarios.join("; ");
-
-    document.getElementById("previewAsunto").textContent =
-        estadoCorreo.asunto;
-
-    document.getElementById("previewCuerpo").textContent =
-        estadoCorreo.cuerpo;
-
-    previewModal.classList.remove("hidden");
+    document.getElementById("modalEnvio").classList.remove("hidden");
 });
 
-// ===== ENVÍO =====
+/* ABRIR CORREO */
+window.abrirCorreo = function(modo){
 
-window.enviarCorreoConfirmado = function(){
+    const to = destinatarios.join(";");
+    const subject = encodeURIComponent(datosCorreo.asunto);
+    const body = encodeURIComponent(datosCorreo.cuerpo);
 
-    const to = encodeURIComponent(destinatarios.join(";"));
-    const subject = encodeURIComponent(estadoCorreo.asunto);
-    const body = encodeURIComponent(estadoCorreo.cuerpo);
+    const enlaceWeb =
+`https://outlook.office.com/mail/deeplink/compose?to=${encodeURIComponent(to)}&subject=${subject}&body=${body}`;
 
-    let enlace = "";
-
-    if(estadoCorreo.modoEnvio === "web"){
-        enlace = `https://outlook.office.com/mail/deeplink/compose?to=${to}&subject=${subject}&body=${body}`;
+    if(modo === "web"){
+        window.open(enlaceWeb, "_blank");
     } else {
-        enlace = `mailto:${destinatarios.join(";")}?subject=${subject}&body=${body}`;
+        const enlaceApp =
+`ms-outlook://compose?to=${encodeURIComponent(to)}&subject=${subject}&body=${body}`;
+
+        window.location.href = enlaceApp;
+
+        setTimeout(function(){
+            window.open(enlaceWeb, "_blank");
+        }, 1000);
     }
 
-    window.open(enlace, "_blank");
+    cerrarModalEnvio();
+};
 
-    previewModal.classList.add("hidden");
+window.cerrarModalEnvio = function(){
+    document.getElementById("modalEnvio").classList.add("hidden");
     form.reset();
-    folioBloqueado = false;
-    inicializarFolio();
+    envioEnProceso = false;
     validarFormulario();
 };
 
-window.cerrarPreview = function(){
-    previewModal.classList.add("hidden");
-    folioBloqueado = false;
-    inicializarFolio();
-    validarFormulario();
-};
-
-// ===== INIT =====
-
+/* INIT */
 actualizarFechaHora();
 setInterval(actualizarFechaHora, 1000);
-inicializarFolio();
 validarFormulario();
 
 })();
