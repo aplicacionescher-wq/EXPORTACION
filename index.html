@@ -1,5 +1,182 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+<meta charset="UTF-8">
+<title>Formulario Institucional - ANAM</title>
+
+<style>
+body {
+    font-family: 'Segoe UI', Arial, sans-serif;
+    background-color: #f1f1f1;
+    padding: 20px;
+}
+
+.container {
+    background: white;
+    padding: 30px;
+    max-width: 800px;
+    margin: auto;
+    border-radius: 8px;
+    box-shadow: 0 0 20px rgba(0,0,0,0.08);
+    border-top: 8px solid #6A0F49;
+}
+
+.header {
+    text-align: center;
+    margin-bottom: 20px;
+}
+
+.header img {
+    max-height: 90px;
+}
+
+.header h2 {
+    color: #6A0F49;
+    margin-top: 10px;
+}
+
+.info {
+    background: #f7f7f7;
+    padding: 12px;
+    border-left: 4px solid #6A0F49;
+    margin-bottom: 20px;
+}
+
+label {
+    font-weight: 600;
+}
+
+select, textarea, input {
+    width: 100%;
+    padding: 10px;
+    margin-top: 5px;
+    margin-bottom: 18px;
+    border-radius: 4px;
+    border: 1px solid #ccc;
+}
+
+button {
+    background-color: #6A0F49;
+    color: white;
+    padding: 12px;
+    border: none;
+    width: 100%;
+    cursor: pointer;
+    font-size: 16px;
+    border-radius: 4px;
+}
+
+button:disabled {
+    opacity: 0.5;
+    cursor: not-allowed;
+}
+
+button:hover:enabled {
+    background-color: #4e0b36;
+}
+
+.hidden {
+    display: none;
+}
+</style>
+</head>
+
+<body>
+
+<div class="container">
+
+<div class="header">
+    <img src="https://upload.wikimedia.org/wikipedia/commons/5/5c/Logo_Agencia_Nacional_de_Aduanas_de_M%C3%A9xico.svg">
+    <h2>Formulario Institucional de Retorno</h2>
+</div>
+
+<div class="info">
+    <strong>Folio:</strong> <span id="folio"></span><br>
+    <strong>Fecha y Hora:</strong> <span id="fechaHora"></span>
+</div>
+
+<form id="formRetorno">
+
+<label>Tipo de Operación:</label>
+<select id="operacion" required>
+    <option value="">-- Seleccione --</option>
+    <option value="IMPORTACION">Importación</option>
+    <option value="EXPORTACION">Exportación</option>
+</select>
+
+<label>Nombre del Operador en Turno:</label>
+<input type="text" id="operador" required>
+
+<label>Seleccione una opción:</label>
+<select id="tipo" required>
+    <option value="">-- Seleccione --</option>
+    <option>Retorno Para Nueva Exploración</option>
+    <option>Retorno Fuera De Horario</option>
+    <option>Retorno Sin Servicio Extraordinario</option>
+    <option>Retorno Por Equivocación de Carril</option>
+    <option>Solicitud de Revisión De Mercancía Sobre-Dimensionada</option>
+</select>
+
+<label>Placa(s) del vehículo:</label>
+<textarea id="placas" required></textarea>
+
+<div id="mercanciaDiv" class="hidden">
+    <label>Tipo de Mercancía / Descripción:</label>
+    <textarea id="mercancia"></textarea>
+</div>
+
+<label>Enviar correo usando:</label>
+<select id="modoEnvio" required>
+    <option value="">-- Seleccione --</option>
+    <option value="web">Outlook Web</option>
+    <option value="app">Aplicación Outlook</option>
+</select>
+
+<button type="submit" disabled>Generar Vista Previa</button>
+
+</form>
+</div>
+
+<!-- MODAL -->
+<div id="previewModal" class="hidden" style="
+position: fixed;
+top:0;
+left:0;
+width:100%;
+height:100%;
+background: rgba(0,0,0,0.6);
+display:flex;
+justify-content:center;
+align-items:center;">
+
+<div style="
+background:white;
+width:90%;
+max-width:700px;
+padding:20px;
+border-radius:8px;
+max-height:80%;
+overflow:auto;">
+
+<h3>Vista Previa del Correo</h3>
+
+<p><strong>Para:</strong></p>
+<div id="previewDestinatarios" style="background:#f1f1f1;padding:10px;margin-bottom:15px;"></div>
+
+<p><strong>Asunto:</strong></p>
+<div id="previewAsunto" style="background:#f1f1f1;padding:10px;margin-bottom:15px;"></div>
+
+<p><strong>Cuerpo:</strong></p>
+<pre id="previewCuerpo" style="background:#f7f7f7;padding:10px;white-space:pre-wrap;"></pre>
+
+<button type="button" onclick="enviarCorreoConfirmado()">Confirmar y Abrir Outlook</button>
+<button type="button" onclick="cerrarPreview()" style="background:#999;margin-top:10px;">Cancelar</button>
+
+</div>
+</div>
+
 <script>
-(function () {
+(function(){
 
 const destinatarios = [
 "jorge.silva@anam.gob.mx",
@@ -18,107 +195,97 @@ const form = document.getElementById("formRetorno");
 const submitBtn = form.querySelector("button[type='submit']");
 const previewModal = document.getElementById("previewModal");
 
-let estadoCorreo = {
-    asunto: "",
-    cuerpo: "",
-    modoEnvio: ""
-};
+let estadoCorreo = {};
+let folioBloqueado = false;
 
-// ============================
-// UTILIDADES
-// ============================
+// ===== UTILIDADES =====
 
-function obtenerFechaBase() {
+function obtenerFechaBase(){
     const hoy = new Date();
     return hoy.getFullYear().toString() +
-        ("0" + (hoy.getMonth()+1)).slice(-2) +
-        ("0" + hoy.getDate()).slice(-2);
+        ("0"+(hoy.getMonth()+1)).slice(-2) +
+        ("0"+hoy.getDate()).slice(-2);
 }
 
-function generarFolio() {
+function generarFolio(){
     const fechaBase = obtenerFechaBase();
-    let contador = localStorage.getItem("contador_" + fechaBase);
-
-    contador = contador ? parseInt(contador) + 1 : 1;
-    localStorage.setItem("contador_" + fechaBase, contador);
-
+    let contador = localStorage.getItem("contador_"+fechaBase);
+    contador = contador ? parseInt(contador)+1 : 1;
+    localStorage.setItem("contador_"+fechaBase, contador);
     return `RET-${fechaBase}-${String(contador).padStart(3,'0')}`;
 }
 
-function inicializarFolio() {
+function inicializarFolio(){
     const fechaBase = obtenerFechaBase();
-    let contador = localStorage.getItem("contador_" + fechaBase);
-    contador = contador ? parseInt(contador) + 1 : 1;
-
+    let contador = localStorage.getItem("contador_"+fechaBase);
+    contador = contador ? parseInt(contador)+1 : 1;
     document.getElementById("folio").textContent =
         `RET-${fechaBase}-${String(contador).padStart(3,'0')}`;
 }
 
-function actualizarFechaHora() {
+function actualizarFechaHora(){
     document.getElementById("fechaHora").textContent =
         new Date().toLocaleString();
 }
 
-// ============================
-// VALIDACIÓN
-// ============================
+// ===== VALIDACIÓN =====
 
-function validarFormulario() {
-    const campos = form.querySelectorAll("[required]");
-    let valido = true;
+function validarFormulario(){
+    const operacion = operacionEl.value.trim();
+    const operador = operadorEl.value.trim();
+    const tipo = tipoEl.value.trim();
+    const placas = placasEl.value.trim();
+    const modoEnvio = modoEnvioEl.value.trim();
+    const mercanciaVisible = !mercanciaDiv.classList.contains("hidden");
+    const mercancia = mercanciaEl.value.trim();
 
-    campos.forEach(campo => {
-        if (!campo.value.trim()) {
-            valido = false;
-        }
-    });
+    let valido = operacion && operador && tipo && placas && modoEnvio;
+
+    if(mercanciaVisible && !mercancia) valido = false;
 
     submitBtn.disabled = !valido;
 }
 
-// ============================
-// EVENTOS
-// ============================
+const operacionEl = document.getElementById("operacion");
+const operadorEl = document.getElementById("operador");
+const tipoEl = document.getElementById("tipo");
+const placasEl = document.getElementById("placas");
+const modoEnvioEl = document.getElementById("modoEnvio");
+const mercanciaDiv = document.getElementById("mercanciaDiv");
+const mercanciaEl = document.getElementById("mercancia");
 
 form.addEventListener("input", validarFormulario);
 form.addEventListener("change", validarFormulario);
 
-document.getElementById("operacion").addEventListener("change", function () {
-    const container = document.querySelector(".container");
-
-    const colores = {
-        "IMPORTACION": "#0055A4",
-        "EXPORTACION": "#0A7F3F"
-    };
-
-    container.style.borderTop = `8px solid ${colores[this.value] || "#6A0F49"}`;
-});
-
-document.getElementById("placas").addEventListener("input", function () {
+placasEl.addEventListener("input", function(){
     this.value = this.value.toUpperCase();
 });
 
-document.getElementById("tipo").addEventListener("change", function () {
-    const mercanciaDiv = document.getElementById("mercanciaDiv");
+tipoEl.addEventListener("change", function(){
     mercanciaDiv.classList.toggle(
         "hidden",
         this.value !== "Solicitud de Revisión De Mercancía Sobre-Dimensionada"
     );
+    validarFormulario();
 });
 
-// ============================
-// SUBMIT
-// ============================
+// ===== SUBMIT =====
 
-form.addEventListener("submit", function (e) {
+form.addEventListener("submit", function(e){
     e.preventDefault();
 
-    const operacion = document.getElementById("operacion").value;
-    const operador = document.getElementById("operador").value.trim();
-    const tipo = document.getElementById("tipo").value;
-    const placas = document.getElementById("placas").value.trim();
-    const mercancia = document.getElementById("mercancia").value.trim();
-    const modoEnvio = document.getElementById("modoEnvio").value;
+    if(folioBloqueado){
+        alert("Ya existe un folio en proceso.");
+        return;
+    }
+
+    if(submitBtn.disabled){
+        alert("Complete todos los campos.");
+        return;
+    }
+
+    folioBloqueado = true;
+    submitBtn.disabled = true;
 
     const folio = generarFolio();
     document.getElementById("folio").textContent = folio;
@@ -126,25 +293,27 @@ form.addEventListener("submit", function (e) {
     let cuerpo =
 `FOLIO: ${folio}
 Fecha y Hora: ${document.getElementById("fechaHora").textContent}
-Operación: ${operacion}
-Operador en Turno: ${operador}
+Operación: ${operacionEl.value}
+Operador en Turno: ${operadorEl.value}
 
 Tipo de Solicitud:
-${tipo}
+${tipoEl.value}
 
 Placa(s):
-${placas}`;
+${placasEl.value}`;
 
-    if (tipo === "Solicitud de Revisión De Mercancía Sobre-Dimensionada") {
+    if(!mercanciaDiv.classList.contains("hidden")){
         cuerpo += `
 
 Tipo de Mercancía:
-${mercancia}`;
+${mercanciaEl.value}`;
     }
 
-    estadoCorreo.asunto = `${operacion} - ${tipo}`;
-    estadoCorreo.cuerpo = cuerpo;
-    estadoCorreo.modoEnvio = modoEnvio;
+    estadoCorreo = {
+        asunto: `${operacionEl.value} - ${tipoEl.value}`,
+        cuerpo: cuerpo,
+        modoEnvio: modoEnvioEl.value
+    };
 
     document.getElementById("previewDestinatarios").textContent =
         destinatarios.join("; ");
@@ -158,11 +327,9 @@ ${mercancia}`;
     previewModal.classList.remove("hidden");
 });
 
-// ============================
-// ENVÍO CONFIRMADO
-// ============================
+// ===== ENVÍO =====
 
-window.enviarCorreoConfirmado = function () {
+window.enviarCorreoConfirmado = function(){
 
     const to = encodeURIComponent(destinatarios.join(";"));
     const subject = encodeURIComponent(estadoCorreo.asunto);
@@ -170,7 +337,7 @@ window.enviarCorreoConfirmado = function () {
 
     let enlace = "";
 
-    if (estadoCorreo.modoEnvio === "web") {
+    if(estadoCorreo.modoEnvio === "web"){
         enlace = `https://outlook.office.com/mail/deeplink/compose?to=${to}&subject=${subject}&body=${body}`;
     } else {
         enlace = `mailto:${destinatarios.join(";")}?subject=${subject}&body=${body}`;
@@ -180,17 +347,19 @@ window.enviarCorreoConfirmado = function () {
 
     previewModal.classList.add("hidden");
     form.reset();
-    submitBtn.disabled = true;
+    folioBloqueado = false;
     inicializarFolio();
+    validarFormulario();
 };
 
-window.cerrarPreview = function () {
+window.cerrarPreview = function(){
     previewModal.classList.add("hidden");
+    folioBloqueado = false;
+    inicializarFolio();
+    validarFormulario();
 };
 
-// ============================
-// INICIALIZACIÓN
-// ============================
+// ===== INIT =====
 
 actualizarFechaHora();
 setInterval(actualizarFechaHora, 1000);
@@ -199,3 +368,6 @@ validarFormulario();
 
 })();
 </script>
+
+</body>
+</html>
