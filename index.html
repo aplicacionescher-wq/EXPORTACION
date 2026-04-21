@@ -10,7 +10,7 @@
     <script src="https://cdn.jsdelivr.net/npm/xlsx/dist/xlsx.full.min.js"></script>
 
     <style>
-        /* Estilos Base e Identidad Visual */
+        /* ESTILOS GLOBALES */
         body {
             margin: 0;
             font-family: Arial, Helvetica, sans-serif;
@@ -27,7 +27,7 @@
             text-align: center;
         }
 
-        /* Contenedor Principal */
+        /* CONTENEDOR PRINCIPAL */
         .container {
             position: relative;
             background: #ffffffee;
@@ -40,7 +40,7 @@
             overflow: hidden;
         }
 
-        /* Logo de Fondo Institucional */
+        /* LOGO DE FONDO (MARCA DE AGUA) */
         .container::before {
             content: "";
             position: absolute;
@@ -51,7 +51,7 @@
             pointer-events: none;
         }
 
-        /* Elemento Gota (Logo Superior) */
+        /* LOGO SUPERIOR (GOTA) */
         .logo-gota {
             position: absolute;
             top: -40px;
@@ -87,7 +87,7 @@
             font-size: 15px;
         }
 
-        /* Formulario y Controles */
+        /* FORMULARIO */
         label { font-weight: bold; font-size: 14px; }
 
         select, input, textarea {
@@ -113,7 +113,7 @@
             cursor: pointer;
             font-weight: bold;
             margin-top: 6px;
-            transition: background 0.3s;
+            transition: 0.3s;
         }
 
         button:hover { opacity: 0.9; }
@@ -121,7 +121,7 @@
 
         .hidden { display: none; }
 
-        /* Modal de Confirmación */
+        /* MODAL */
         .modal {
             display: none;
             position: fixed;
@@ -141,7 +141,7 @@
             border-top: 6px solid #611232;
         }
 
-        /* Tabla de Resultados */
+        /* TABLA DE CONSULTAS */
         table { width: 100%; border-collapse: collapse; margin-top: 15px; }
         th, td { border: 1px solid #ccc; padding: 6px; font-size: 12px; text-align: center; }
         th { background: #611232; color: #fff; }
@@ -151,12 +151,10 @@
 </head>
 <body>
 
-    <div class="top-bar">
-        Gobierno de México | Agencia Nacional de Aduanas de México
-    </div>
+    <div class="top-bar">Gobierno de México | Agencia Nacional de Aduanas de México</div>
 
     <div class="container">
-        <div class="logo-gota"><img src="logo-anam2.png"></div>
+        <div class="logo-gota"><img src="logo-anam2.png" alt="Logo"></div>
         <div class="title">Solicitud de Retornos Módulos</div>
 
         <h3>Generador de Solicitudes</h3>
@@ -171,7 +169,7 @@
             </select>
 
             <label>Operador</label>
-            <input type="text" id="operador" placeholder="Nombre del operador" required>
+            <input type="text" id="operador" placeholder="Nombre completo" required>
 
             <label>Tipo de Solicitud</label>
             <select id="tipo" required>
@@ -183,18 +181,18 @@
             </select>
 
             <label>Placas</label>
-            <textarea id="placas" placeholder="Ingrese placas" required></textarea>
+            <textarea id="placas" placeholder="Ej: ABC-1234" required></textarea>
 
             <div id="mercanciaDiv" class="hidden">
                 <label>Descripción de la Mercancía</label>
-                <textarea id="mercancia" placeholder="Detalle de mercancía"></textarea>
+                <textarea id="mercancia" placeholder="Describa la carga"></textarea>
             </div>
 
             <button type="submit" id="btnGenerar" disabled>Generar Correo</button>
 
-            <hr style="margin: 20px 0;">
+            <hr style="margin: 20px 0; border: 0; border-top: 1px solid #ccc;">
 
-            <label>Seleccionar fecha para consulta (opcional)</label>
+            <label>Consultar Registros</label>
             <input type="date" id="fechaConsulta">
 
             <button type="button" onclick="consultarPlacas()" style="background:#611232;">Consultar Placas</button>
@@ -210,20 +208,23 @@
         <div class="modal-content">
             <h3>Confirmación de Envío</h3>
             <p style="font-size: 13px; color: #555; margin-bottom: 15px;">
-                Se procederá a abrir <strong>Microsoft Outlook App</strong>.<br>
-                Uso exclusivo para cuentas <strong>@anam.gob.mx</strong>.
+                Se procederá a abrir la aplicación de <strong>Outlook</strong> para enviar el reporte oficial.
             </p>
-            <button onclick="abrirApp()">Abrir Outlook App</button>
+            
+            <a id="btnOutlookFinal" style="text-decoration: none; width: 100%; display: block;">
+                <button type="button" style="width: 100%;">Abrir Outlook App</button>
+            </a>
+
             <button onclick="cerrarModal()" style="background:#666; margin-top:10px;">Cancelar</button>
         </div>
     </div>
 
     <script type="module">
-        /* Importaciones Firebase */
+        /* IMPORTACIONES FIREBASE */
         import { initializeApp } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-app.js";
         import { getDatabase, ref, push, runTransaction, get } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-database.js";
 
-        /* Configuración Firebase */
+        /* CONFIGURACIÓN FIREBASE */
         const firebaseConfig = {
             apiKey: "TU_API_KEY",
             authDomain: "retornos-anam-altamira.firebaseapp.com",
@@ -237,7 +238,7 @@
         const app = initializeApp(firebaseConfig);
         const db = getDatabase(app);
 
-        /* Referencias al DOM */
+        /* REFERENCIAS DOM */
         const form = document.getElementById("formRetorno");
         const tipo = document.getElementById("tipo");
         const mercanciaDiv = document.getElementById("mercanciaDiv");
@@ -247,23 +248,21 @@
         const operador = document.getElementById("operador");
         const modal = document.getElementById("selectorModal");
         const btnGenerar = document.getElementById("btnGenerar");
+        const btnOutlookFinal = document.getElementById("btnOutlookFinal");
 
         let tablaVisible = false;
 
-        /* Listas de Distribución */
-        const listaCorreosBase = [
-            "juan.reyesg@anam.gob.mx", "vyc.altamira@anam.gob.mx", "alejandra.munoz@anam.gob.mx",
-            "jorge.silva@anam.gob.mx", "abraham.gomez@anam.gob.mx", "daniel.santosh@anam.gob.mx",
-            "christian.monrreal@anam.gob.mx", "monica.becerra@anam.gob.mx", "anahi.santiago@anam.gob.mx"
-        ];
+        /* CORREOS INSTITUCIONALES */
+        const listaCorreosBase = ["juan.reyesg@anam.gob.mx", "vyc.altamira@anam.gob.mx", "alejandra.munoz@anam.gob.mx", "jorge.silva@anam.gob.mx", "abraham.gomez@anam.gob.mx", "daniel.santosh@anam.gob.mx", "christian.monrreal@anam.gob.mx", "monica.becerra@anam.gob.mx", "anahi.santiago@anam.gob.mx"];
         const correosExtrasRevision = ["emilio.garin@anam.gob.mx", "sergio.diazr@anam.gob.mx", "oscar.narro@anam.gob.mx"];
 
-        /* Lógica de Interfaz */
+        /* VALIDACIÓN Y CONTROL DE INTERFAZ */
         function validarFormulario() {
             btnGenerar.disabled = !form.checkValidity();
         }
 
         form.addEventListener("input", validarFormulario);
+
         tipo.addEventListener("change", () => {
             if (tipo.value === "revision") {
                 mercanciaDiv.classList.remove("hidden");
@@ -281,14 +280,15 @@
             validarFormulario();
         });
 
-        /* Fecha y Folio */
         function actualizarFecha() {
             document.getElementById("fechaHora").textContent = new Date().toLocaleString();
         }
         setInterval(actualizarFecha, 1000);
         actualizarFecha();
+
         document.getElementById("fechaConsulta").value = new Date().toISOString().split("T")[0];
 
+        /* GENERADOR DE FOLIO */
         async function generarFolio() {
             const hoy = new Date();
             const base = hoy.getFullYear().toString() + ("0" + (hoy.getMonth() + 1)).slice(-2) + ("0" + hoy.getDate()).slice(-2);
@@ -297,23 +297,25 @@
             return "RET-" + base + "-" + result.snapshot.val().toString().padStart(3, "0");
         }
 
-        /* Procesamiento del Formulario */
+        /* ENVÍO DEL FORMULARIO */
         form.addEventListener("submit", async e => {
             e.preventDefault();
-            if (!form.checkValidity()) { form.reportValidity(); return; }
 
+            // Preparar correos
             let correosFinales = [...listaCorreosBase];
             if (tipo.value === "revision") {
                 correosFinales = correosFinales.concat(correosExtrasRevision);
             }
+            const destinatarios = correosFinales.join(",");
 
-            window.destinatariosMailto = correosFinales.join(",");
+            // Obtener Folio
             const folio = await generarFolio();
             document.getElementById("folio").textContent = folio;
 
+            // Redactar Cuerpo
             const hora = new Date().getHours();
             let saludo = (hora < 12) ? "Buenos días" : (hora < 19) ? "Buenas tardes" : "Buenas noches";
-
+            
             let cuerpo = saludo + ",\n\n";
             if (tipo.value === "revision") {
                 cuerpo += `Solicito su valioso apoyo para la apertura del carril de excesos de exportación, para el ingreso de excesos de dimensiones.\n\nPLACAS:\n${placas.value}\n\nMERCANCÍA:\n${mercancia.value}\n\nPara posteriormente ser inspeccionado por el equipo ZBV del departamento de equipos no intrusivos en la explanada de vacíos de importación.\n\nFavor de dar parte al personal del módulo cuando la unidad sea revisada y contestar correo electrónico una vez efectuada la revisión.\n\nGracias.\n\nSaludos cordiales,\n${operador.value}\nMódulos\nANAM Altamira`;
@@ -322,75 +324,75 @@
                 cuerpo += `El presente correo es para solicitar la apertura ${lugar} para el retorno al vehículo con las placas siguientes:\n\nPLACAS:\n${placas.value}\n\nTipo de retorno:\n${tipo.options[tipo.selectedIndex].text}\n\nGracias.\n\nSaludos cordiales,\n${operador.value}\nMódulos\nANAM Altamira`;
             }
 
-            // Guardar en Base de Datos
+            // Guardar en Firebase
             await push(ref(db, "retornos"), {
-                folio, fecha: new Date().toISOString(), operacion: operacion.value,
-                operador: operador.value, tipo: tipo.value, placas: placas.value,
+                folio,
+                fecha: new Date().toISOString(),
+                operacion: operacion.value,
+                operador: operador.value,
+                tipo: tipo.value,
+                placas: placas.value,
                 mercancia: mercancia.value || ""
             });
 
-            window.asuntoActual = `${operacion.value} - ${tipo.options[tipo.selectedIndex].text}`;
-            window.cuerpoActual = cuerpo;
+            // Preparar URL de Outlook
+            const asunto = encodeURIComponent(`${operacion.value} - ${tipo.options[tipo.selectedIndex].text}`);
+            const cuerpoUrl = encodeURIComponent(cuerpo);
+            
+            // Asignar link al botón del modal
+            btnOutlookFinal.href = `ms-outlook://compose?to=${destinatarios}&subject=${asunto}&body=${cuerpoUrl}`;
 
+            // Mostrar Modal
             modal.style.display = "flex";
+
+            // Resetear UI
             form.reset();
             mercanciaDiv.classList.add("hidden");
             btnGenerar.disabled = true;
         });
 
-        /* --- CONTROL DE APLICACIÓN OUTLOOK --- */
-        window.abrirApp = function() {
-            const to = window.destinatariosMailto;
-            const subject = encodeURIComponent(window.asuntoActual);
-            const body = encodeURIComponent(window.cuerpoActual);
-
-            // Protocolo exclusivo de Outlook. No usa mailto: para evitar Apple Mail.
-            const outlookUrl = `ms-outlook://compose?to=${to}&subject=${subject}&body=${body}`;
-            
-            let paginaSeOculto = false;
-            const detectarSalida = () => { paginaSeOculto = true; };
-            window.addEventListener("visibilitychange", detectarSalida, { once: true });
-
-            // Ejecución
-            window.location.href = outlookUrl;
-
-            // Verificación de apertura
-            setTimeout(() => {
-                if (!paginaSeOculto && !document.hidden) {
-                    alert("❌ NO SE ENCONTRÓ OUTLOOK\n\nPara continuar, instale Microsoft Outlook App desde su tienda de aplicaciones.");
-                }
-            }, 2000);
-
-            cerrarModal();
+        /* CONTROL DE MODAL */
+        window.cerrarModal = function() {
+            modal.style.display = "none";
         };
 
-        window.cerrarModal = function() { modal.style.display = "none"; };
+        // Al hacer clic en el link de Outlook, cerramos el modal tras un pequeño delay
+        btnOutlookFinal.addEventListener("click", () => {
+            setTimeout(cerrarModal, 1000);
+        });
 
-        /* Consultas y Excel */
+        /* CONSULTA DE PLACAS */
         window.consultarPlacas = async function() {
             const contenedor = document.getElementById("tablaResultados");
             const fechaInput = document.getElementById("fechaConsulta").value;
-            if (tablaVisible) { contenedor.innerHTML = ""; tablaVisible = false; return; }
             
+            if (tablaVisible) {
+                contenedor.innerHTML = "";
+                tablaVisible = false;
+                return;
+            }
+
             const snapshot = await get(ref(db, "retornos"));
-            let fechaFiltro = fechaInput || new Date().toISOString().split("T")[0];
             let html = "<table><tr><th>Operador</th><th>Placas</th></tr>";
             
             snapshot.forEach(doc => {
                 let d = doc.val();
-                if (d.fecha.startsWith(fechaFiltro)) {
+                if (d.fecha.startsWith(fechaInput)) {
                     html += `<tr><td>${d.operador}</td><td>${d.placas}</td></tr>`;
                 }
             });
+            
             html += "</table>";
             contenedor.innerHTML = html;
             tablaVisible = true;
         };
 
+        /* EXPORTAR A EXCEL */
         window.exportarExcel = async function() {
             const snapshot = await get(ref(db, "retornos"));
             let datos = [];
             snapshot.forEach(doc => datos.push(doc.val()));
+            
             const ws = XLSX.utils.json_to_sheet(datos);
             const wb = XLSX.utils.book_new();
             XLSX.utils.book_append_sheet(wb, ws, "Retornos");
