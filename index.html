@@ -190,6 +190,7 @@ Solicitud de Retornos Módulos
 
 <label>Tipo de Operación</label>
 <select id="operacion" required>
+<option>IMPORTACION</option>
 <option selected>EXPORTACION</option>
 </select>
 
@@ -236,6 +237,7 @@ Solicitud de Retornos Módulos
 <div class="modal-content">
 <h3>¿Cómo deseas enviar el correo?</h3>
 <button onclick="abrirApp()">Abrir App Outlook</button>
+<button onclick="abrirWeb()">Abrir Outlook Web</button>
 <button onclick="cerrarModal()" style="background:#666; margin-top:10px;">Cancelar</button>
 </div>
 </div>
@@ -341,7 +343,6 @@ form.reportValidity();
 return;
 }
 
-/* ✅ LÓGICA DE DESTINATARIOS DINÁMICOS */
 let correosFinales = [...listaCorreosBase];
 if (tipo.value === "revision") {
     correosFinales = correosFinales.concat(correosExtrasRevision);
@@ -354,15 +355,7 @@ const folio=await generarFolio();
 document.getElementById("folio").textContent=folio;
 
 const hora = new Date().getHours();
-let saludo = "";
-
-if (hora < 12) {
-saludo = "Buenos días";
-} else if (hora < 19) {
-saludo = "Buenas tardes";
-} else {
-saludo = "Buenas noches";
-}
+let saludo = (hora < 12) ? "Buenos días" : (hora < 19) ? "Buenas tardes" : "Buenas noches";
 
 let cuerpo = saludo + ",\n\n";
 
@@ -380,29 +373,17 @@ operador.value + "\n" +
 "ANAM Altamira";
 
 } else {
-if (operacion.value === "EXPORTACION") {
-cuerpo +=
-"El presente correo es para solicitar la apertura del carril de excesos a la exportación para el retorno al vehículo con las placas siguientes:\n\n" +
-"PLACAS:\n" + placas.value + "\n\n" +
-"Tipo de retorno:\n" +
-tipo.options[tipo.selectedIndex].text + "\n\n" +
-"Gracias.\n\n" +
-"Saludos cordiales,\n" +
-operador.value + "\n" +
-"Módulos \n" +
-"ANAM Altamira";
-} else {
-cuerpo +=
-"El presente correo es para solicitar la apertura de la Puerta Caracol para el retorno al vehículo con las placas siguientes:\n\n" +
-placas.value + "\n\n" +
-"Tipo de retorno:\n" +
-tipo.options[tipo.selectedIndex].text + "\n\n" +
-"Gracias.\n\n" +
-"Saludos cordiales,\n" +
-operador.value + "\n" +
-"Módulos\n" +
-"ANAM Altamira";
-}
+    const textoOperacion = operacion.value === "EXPORTACION" ? "carril de excesos a la exportación" : "Puerta Caracol";
+    cuerpo +=
+    "El presente correo es para solicitar la apertura de " + textoOperacion + " para el retorno al vehículo con las placas siguientes:\n\n" +
+    "**PLACAS:**\n" + placas.value + "\n\n" +
+    "Tipo de retorno:\n" +
+    tipo.options[tipo.selectedIndex].text + "\n\n" +
+    "Gracias.\n\n" +
+    "Saludos cordiales,\n" +
+    operador.value + "\n" +
+    "Módulos\n" +
+    "ANAM Altamira";
 }
 
 await push(ref(db,"retornos"),{
@@ -418,77 +399,80 @@ mercancia:mercancia.value || ""
 window.asunto = operacion.value + " - " + tipo.options[tipo.selectedIndex].text;
 window.cuerpo=cuerpo;
 
-/* ✅ SE MUESTRA EL MODAL SIEMPRE PARA PERMITIR SELECCIÓN EN PC Y MÓVIL */
+// Mostramos el modal para que el usuario elija
 modal.style.display="flex";
 
 form.reset();
 mercanciaDiv.classList.add("hidden");
 mercancia.required=false;
-mercancia.value="";
 btnGenerar.disabled=true;
 document.getElementById("folio").textContent="--";
 
 });
 
-window.abrirApp=function(){
-window.location.href="mailto:"+window.destinatariosMailto+
-"?subject="+encodeURIComponent(window.asunto)+
-"&body="+encodeURIComponent(window.cuerpo);
-cerrarModal();
+/* ✅ ESTA ES LA FUNCION QUE FUERZA LA APP DE OUTLOOK */
+window.abrirApp = function() {
+    const to = encodeURIComponent(window.destinatariosMailto);
+    const subject = encodeURIComponent(window.asunto);
+    const body = encodeURIComponent(window.cuerpo);
+
+    // Protocolo directo para abrir la ventana de REDACTAR en la APP de Outlook
+    const outlookUrl = `ms-outlook://compose?to=${to}&subject=${subject}&body=${body}`;
+    
+    // Intentamos abrir Outlook directamente
+    window.location.href = outlookUrl;
+
+    // Respaldo: Si en 500ms el navegador sigue activo es que no tiene la app de Outlook instalada
+    // Entonces usamos el mailto tradicional como plan B
+    setTimeout(() => {
+        if (!document.hidden) {
+            window.location.href = `mailto:${to}?subject=${subject}&body=${body}`;
+        }
+    }, 500);
+
+    cerrarModal();
 }
 
 window.abrirWeb=function(){
-window.open(
-"https://outlook.office.com/mail/deeplink/compose?to="+encodeURIComponent(window.destinatariosWeb)+
-"&subject="+encodeURIComponent(window.asunto)+
-"&body="+encodeURIComponent(window.cuerpo),
-"_blank"
-);
-cerrarModal();
+    window.open(
+    "https://outlook.office.com/mail/deeplink/compose?to="+encodeURIComponent(window.destinatariosWeb)+
+    "&subject="+encodeURIComponent(window.asunto)+
+    "&body="+encodeURIComponent(window.cuerpo),
+    "_blank"
+    );
+    cerrarModal();
 }
 
 window.cerrarModal=function(){
-modal.style.display="none";
+    modal.style.display="none";
 }
 
 window.consultarPlacas = async function(){
-const contenedor = document.getElementById("tablaResultados");
-const fechaInput = document.getElementById("fechaConsulta").value;
-if(tablaVisible){
-contenedor.innerHTML="";
-tablaVisible=false;
-return;
-}
-const snapshot = await get(ref(db,"retornos"));
-let fechaFiltro;
-if(fechaInput){
-fechaFiltro = fechaInput;
-}else{
-fechaFiltro = new Date().toISOString().split("T")[0];
-}
-let html="<table><tr><th>Operador</th><th>Placas</th></tr>";
-snapshot.forEach(doc=>{
-let d=doc.val();
-if(d.fecha.startsWith(fechaFiltro)){
-html+="<tr><td>"+d.operador+"</td><td>"+d.placas+"</td></tr>";
-}
-});
-html+="</table>";
-contenedor.innerHTML=html;
-tablaVisible=true;
+    const contenedor = document.getElementById("tablaResultados");
+    const fechaInput = document.getElementById("fechaConsulta").value;
+    if(tablaVisible){ contenedor.innerHTML=""; tablaVisible=false; return; }
+    const snapshot = await get(ref(db,"retornos"));
+    let fechaFiltro = fechaInput || new Date().toISOString().split("T")[0];
+    let html="<table><tr><th>Operador</th><th>Placas</th></tr>";
+    snapshot.forEach(doc=>{
+        let d=doc.val();
+        if(d.fecha.startsWith(fechaFiltro)) html+="<tr><td>"+d.operador+"</td><td>"+d.placas+"</td></tr>";
+    });
+    html+="</table>";
+    contenedor.innerHTML=html;
+    tablaVisible=true;
 }
 
 window.exportarExcel=async function(){
-const snapshot=await get(ref(db,"retornos"));
-let datos=[];
-snapshot.forEach(doc=>datos.push(doc.val()));
-const ws=XLSX.utils.json_to_sheet(datos);
-const wb=XLSX.utils.book_new();
-XLSX.utils.book_append_sheet(wb,ws,"Retornos");
-XLSX.writeFile(wb,"Retornos_ANAM.xlsx");
+    const snapshot=await get(ref(db,"retornos"));
+    let datos=[];
+    snapshot.forEach(doc=>datos.push(doc.val()));
+    const ws=XLSX.utils.json_to_sheet(datos);
+    const wb=XLSX.utils.book_new();
+    XLSX.utils.book_append_sheet(wb,ws,"Retornos");
+    XLSX.writeFile(wb,"Retornos_ANAM.xlsx");
 }
 
 </script>
-
 </body>
 </html>
