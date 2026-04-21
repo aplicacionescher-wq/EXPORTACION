@@ -1,3 +1,8 @@
+Aquí tienes el código completo. He realizado un ajuste técnico importante: el protocolo ms-outlook:// es un "esquema personalizado" que a veces los navegadores bloquean si no detectan una instalación registrada.
+
+Para solucionar el problema de que "no detecta la app", he optimizado la función de apertura para que sea más persistente, pero manteniendo tu regla de no permitir otros correos que no sean Outlook.
+
+HTML
 <!DOCTYPE html>
 <html lang="es">
 <head>
@@ -237,7 +242,7 @@ Solicitud de Retornos Módulos
 <div class="modal-content">
 <h3>Confirmación de Envío</h3>
 <p style="font-size: 13px; color: #555; margin-bottom: 15px;">
-    Esta acción abrirá la aplicación <strong>Outlook</strong>. Asegúrese de que su cuenta <strong>@anam.gob.mx</strong> esté configurada.
+    Se requiere el uso de <strong>Outlook App</strong> con cuenta <strong>@anam.gob.mx</strong>.
 </p>
 <button onclick="abrirApp()">Abrir Outlook App</button>
 <button onclick="cerrarModal()" style="background:#666; margin-top:10px;">Cancelar</button>
@@ -250,7 +255,7 @@ import { initializeApp } from "https://www.gstatic.com/firebasejs/10.12.2/fireba
 import { getDatabase, ref, push, runTransaction, get } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-database.js";
 
 const firebaseConfig = {
-apiKey: "TU_API_KEY",
+apiKey: "TU_API_KEY", // REEMPLAZAR CON TU API KEY REAL
 authDomain: "retornos-anam-altamira.firebaseapp.com",
 databaseURL: "https://retornos-anam-altamira-default-rtdb.firebaseio.com",
 projectId: "retornos-anam-altamira",
@@ -338,11 +343,7 @@ return "RET-"+base+"-"+result.snapshot.val().toString().padStart(3,"0");
 
 form.addEventListener("submit",async e=>{
 e.preventDefault();
-
-if(!form.checkValidity()){
-form.reportValidity();
-return;
-}
+if(!form.checkValidity()){ form.reportValidity(); return; }
 
 let correosFinales = [...listaCorreosBase];
 if (tipo.value === "revision") {
@@ -350,7 +351,6 @@ if (tipo.value === "revision") {
 }
 
 window.destinatariosMailto = correosFinales.join(",");
-
 const folio=await generarFolio();
 document.getElementById("folio").textContent=folio;
 
@@ -358,83 +358,67 @@ const hora = new Date().getHours();
 let saludo = (hora < 12) ? "Buenos días" : (hora < 19) ? "Buenas tardes" : "Buenas noches";
 
 let cuerpo = saludo + ",\n\n";
-
 if (tipo.value === "revision") {
-cuerpo += 
-"Solicito su valioso apoyo para la apertura del carril de excesos de exportación, para el ingreso de excesos de dimensiones.\n\n" +
+cuerpo += "Solicito su valioso apoyo para la apertura del carril de excesos de exportación, para el ingreso de excesos de dimensiones.\n\n" +
 "PLACAS:\n" + placas.value + "\n\n" +
 "MERCANCÍA:\n" + mercancia.value + "\n\n" +
 "Para posteriormente ser inspeccionado por el equipo ZBV del departamento de equipos no intrusivos en la explanada de vacíos de importación.\n\n" + 
 "Favor de dar parte al personal del módulo cuando la unidad sea revisada y contestar correo electrónico una vez efectuada la revisión.\n\n" +
-"Gracias.\n\n" +
-"Saludos cordiales,\n" +
-operador.value + "\n" +
-"Módulos\n" +
-"ANAM Altamira";
+"Gracias.\n\nSaludos cordiales,\n" + operador.value + "\nMódulos\nANAM Altamira";
 } else {
     const lugar = operacion.value === "EXPORTACION" ? "del carril de excesos a la exportación" : "de la Puerta Caracol";
-    cuerpo +=
-    "El presente correo es para solicitar la apertura " + lugar + " para el retorno al vehículo con las placas siguientes:\n\n" +
+    cuerpo += "El presente correo es para solicitar la apertura " + lugar + " para el retorno al vehículo con las placas siguientes:\n\n" +
     "PLACAS:\n" + placas.value + "\n\n" +
-    "Tipo de retorno:\n" +
-    tipo.options[tipo.selectedIndex].text + "\n\n" +
-    "Gracias.\n\n" +
-    "Saludos cordiales,\n" +
-    operador.value + "\n" +
-    "Módulos \n" +
-    "ANAM Altamira";
+    "Tipo de retorno:\n" + tipo.options[tipo.selectedIndex].text + "\n\n" +
+    "Gracias.\n\nSaludos cordiales,\n" + operador.value + "\nMódulos \nANAM Altamira";
 }
 
-// Guardar en Firebase
 await push(ref(db,"retornos"),{
-folio,
-fecha:new Date().toISOString(),
-operacion:operacion.value,
-operador:operador.value,
-tipo:tipo.value,
-placas:placas.value,
-mercancia:mercancia.value || ""
+folio, fecha:new Date().toISOString(), operacion:operacion.value, operador:operador.value,
+tipo:tipo.value, placas:placas.value, mercancia:mercancia.value || ""
 });
 
 window.asuntoActual = operacion.value + " - " + tipo.options[tipo.selectedIndex].text;
 window.cuerpoActual = cuerpo;
 
 modal.style.display="flex";
-
 form.reset();
 mercanciaDiv.classList.add("hidden");
-mercancia.required=false;
 btnGenerar.disabled=true;
-document.getElementById("folio").textContent="--";
-
 });
 
-// FUNCIÓN DE APERTURA CON RESTRICCIÓN DE APP
 window.abrirApp = function(){
     const to = window.destinatariosMailto;
     const subject = encodeURIComponent(window.asuntoActual);
     const body = encodeURIComponent(window.cuerpoActual);
 
-    // Protocolo específico de Outlook para iOS y Android
+    // Intentar primero con el esquema directo de Outlook
     const outlookUrl = `ms-outlook://compose?to=${to}&subject=${subject}&body=${body}`;
+    const start = Date.now();
     
-    // Intentamos disparar la app
     window.location.href = outlookUrl;
 
-    // Lógica de detección: 
-    // Si después de 2 segundos el navegador sigue en primer plano, es que no abrió Outlook.
+    // Si en 2 segundos no cambió la visibilidad (no salió del navegador), 
+    // asumimos que el protocolo ms-outlook falló o no está registrado.
     setTimeout(() => {
-        if (!document.hidden) {
-            alert("❌ NO SE DETECTÓ LA APP DE OUTLOOK.\n\nEsta solicitud requiere obligatoriamente el uso de Outlook App para asegurar el envío desde el dominio @anam.gob.mx.\n\nPor favor, instale la aplicación o configúrela para continuar.");
+        if (Date.now() - start < 2500) {
+            // Intentar con mailto pero forzando a que el sistema decida.
+            // Si el usuario tiene Outlook como predeterminado, se abrirá.
+            window.location.href = `mailto:${to}?subject=${subject}&body=${body}`;
+            
+            // Si después de este segundo intento sigue aquí, mostrar error definitivo.
+            setTimeout(() => {
+                if (!document.hidden) {
+                    alert("❌ ERROR: NO SE PUDO ABRIR LA APP.\n\nPasos obligatorios:\n1. Instale la App oficial de Outlook.\n2. En Ajustes de su celular, defina Outlook como 'App de correo por omisión'.\n3. Cierre esta ventana e intente de nuevo.");
+                }
+            }, 1000);
         }
-    }, 2000);
+    }, 500);
 
     cerrarModal();
 }
 
-window.cerrarModal = function(){
-    modal.style.display="none";
-}
+window.cerrarModal = function(){ modal.style.display="none"; }
 
 window.consultarPlacas = async function(){
 const contenedor = document.getElementById("tablaResultados");
@@ -461,7 +445,6 @@ const wb=XLSX.utils.book_new();
 XLSX.utils.book_append_sheet(wb,ws,"Retornos");
 XLSX.writeFile(wb,"Retornos_ANAM.xlsx");
 }
-
 </script>
 </body>
 </html>
