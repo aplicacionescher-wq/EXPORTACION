@@ -10,7 +10,7 @@
     <script src="https://cdn.jsdelivr.net/npm/xlsx/dist/xlsx.full.min.js"></script>
 
     <style>
-        /* ESTILOS GLOBALES */
+        /* Estilos Base e Identidad Visual */
         body {
             margin: 0;
             font-family: Arial, Helvetica, sans-serif;
@@ -27,7 +27,7 @@
             text-align: center;
         }
 
-        /* CONTENEDOR PRINCIPAL */
+        /* Contenedor Principal */
         .container {
             position: relative;
             background: #ffffffee;
@@ -40,7 +40,7 @@
             overflow: hidden;
         }
 
-        /* LOGO DE FONDO (MARCA DE AGUA) */
+        /* Logo de Fondo Institucional */
         .container::before {
             content: "";
             position: absolute;
@@ -51,7 +51,7 @@
             pointer-events: none;
         }
 
-        /* LOGO SUPERIOR (GOTA) */
+        /* Elemento Gota (Logo Superior) */
         .logo-gota {
             position: absolute;
             top: -40px;
@@ -87,7 +87,7 @@
             font-size: 15px;
         }
 
-        /* FORMULARIO */
+        /* Formulario y Controles */
         label { font-weight: bold; font-size: 14px; }
 
         select, input, textarea {
@@ -121,7 +121,7 @@
 
         .hidden { display: none; }
 
-        /* MODAL */
+        /* Modal de Confirmación */
         .modal {
             display: none;
             position: fixed;
@@ -134,16 +134,30 @@
 
         .modal-content {
             background: #fff;
-            padding: 20px;
-            border-radius: 8px;
+            padding: 25px;
+            border-radius: 12px;
             width: 320px;
             text-align: center;
             border-top: 6px solid #611232;
+            box-shadow: 0 15px 30px rgba(0,0,0,0.3);
         }
 
-        /* TABLA DE CONSULTAS */
+        /* Botón estilo enlace para Outlook */
+        .btn-outlook {
+            display: block;
+            background: #1E5B4F;
+            color: white !important;
+            padding: 14px;
+            text-decoration: none;
+            border-radius: 6px;
+            font-weight: bold;
+            margin: 20px 0 10px;
+            font-size: 15px;
+        }
+
+        /* Tabla de Resultados */
         table { width: 100%; border-collapse: collapse; margin-top: 15px; }
-        th, td { border: 1px solid #ccc; padding: 6px; font-size: 12px; text-align: center; }
+        th, td { border: 1px solid #ccc; padding: 8px; font-size: 12px; text-align: center; }
         th { background: #611232; color: #fff; }
 
         .footer { text-align: center; font-size: 11px; color: #98989A; margin: 20px 0; }
@@ -169,7 +183,7 @@
             </select>
 
             <label>Operador</label>
-            <input type="text" id="operador" placeholder="Nombre completo" required>
+            <input type="text" id="operador" placeholder="Escriba su nombre" required>
 
             <label>Tipo de Solicitud</label>
             <select id="tipo" required>
@@ -181,20 +195,19 @@
             </select>
 
             <label>Placas</label>
-            <textarea id="placas" placeholder="Ej: ABC-1234" required></textarea>
+            <textarea id="placas" placeholder="PLACAS" required></textarea>
 
             <div id="mercanciaDiv" class="hidden">
                 <label>Descripción de la Mercancía</label>
-                <textarea id="mercancia" placeholder="Describa la carga"></textarea>
+                <textarea id="mercancia" placeholder="Detalle de la mercancía"></textarea>
             </div>
 
             <button type="submit" id="btnGenerar" disabled>Generar Correo</button>
 
-            <hr style="margin: 20px 0; border: 0; border-top: 1px solid #ccc;">
+            <hr style="margin: 25px 0; border: 0; border-top: 1px solid #ccc;">
 
-            <label>Consultar Registros</label>
+            <label>Consulta de Registros</label>
             <input type="date" id="fechaConsulta">
-
             <button type="button" onclick="consultarPlacas()" style="background:#611232;">Consultar Placas</button>
             <button type="button" onclick="exportarExcel()" style="background:#A57F2C;">Exportar a Excel</button>
 
@@ -206,25 +219,22 @@
 
     <div id="selectorModal" class="modal">
         <div class="modal-content">
-            <h3>Confirmación de Envío</h3>
-            <p style="font-size: 13px; color: #555; margin-bottom: 15px;">
-                Se procederá a abrir la aplicación de <strong>Outlook</strong> para enviar el reporte oficial.
+            <h3>Solicitud Generada</h3>
+            <p style="font-size: 13px; color: #444; line-height: 1.4;">
+                Los datos se han guardado. Para finalizar, presione el botón de abajo para abrir <strong>Outlook App</strong>.
             </p>
             
-            <a id="btnOutlookFinal" style="text-decoration: none; width: 100%; display: block;">
-                <button type="button" style="width: 100%;">Abrir Outlook App</button>
-            </a>
+            <a id="linkOutlookFinal" href="#" class="btn-outlook">Abrir Outlook Ahora</a>
 
-            <button onclick="cerrarModal()" style="background:#666; margin-top:10px;">Cancelar</button>
+            <button onclick="cerrarModal()" style="background:#666; margin-top:5px; padding: 8px;">Cerrar</button>
         </div>
     </div>
 
     <script type="module">
-        /* IMPORTACIONES FIREBASE */
         import { initializeApp } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-app.js";
         import { getDatabase, ref, push, runTransaction, get } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-database.js";
 
-        /* CONFIGURACIÓN FIREBASE */
+        // Configuración Firebase
         const firebaseConfig = {
             apiKey: "TU_API_KEY",
             authDomain: "retornos-anam-altamira.firebaseapp.com",
@@ -238,7 +248,7 @@
         const app = initializeApp(firebaseConfig);
         const db = getDatabase(app);
 
-        /* REFERENCIAS DOM */
+        // Referencias DOM
         const form = document.getElementById("formRetorno");
         const tipo = document.getElementById("tipo");
         const mercanciaDiv = document.getElementById("mercanciaDiv");
@@ -248,19 +258,16 @@
         const operador = document.getElementById("operador");
         const modal = document.getElementById("selectorModal");
         const btnGenerar = document.getElementById("btnGenerar");
-        const btnOutlookFinal = document.getElementById("btnOutlookFinal");
+        const linkOutlookFinal = document.getElementById("linkOutlookFinal");
 
         let tablaVisible = false;
 
-        /* CORREOS INSTITUCIONALES */
+        // Correos
         const listaCorreosBase = ["juan.reyesg@anam.gob.mx", "vyc.altamira@anam.gob.mx", "alejandra.munoz@anam.gob.mx", "jorge.silva@anam.gob.mx", "abraham.gomez@anam.gob.mx", "daniel.santosh@anam.gob.mx", "christian.monrreal@anam.gob.mx", "monica.becerra@anam.gob.mx", "anahi.santiago@anam.gob.mx"];
         const correosExtrasRevision = ["emilio.garin@anam.gob.mx", "sergio.diazr@anam.gob.mx", "oscar.narro@anam.gob.mx"];
 
-        /* VALIDACIÓN Y CONTROL DE INTERFAZ */
-        function validarFormulario() {
-            btnGenerar.disabled = !form.checkValidity();
-        }
-
+        // Lógica de UI
+        function validarFormulario() { btnGenerar.disabled = !form.checkValidity(); }
         form.addEventListener("input", validarFormulario);
 
         tipo.addEventListener("change", () => {
@@ -288,7 +295,7 @@
 
         document.getElementById("fechaConsulta").value = new Date().toISOString().split("T")[0];
 
-        /* GENERADOR DE FOLIO */
+        // Folio Dinámico
         async function generarFolio() {
             const hoy = new Date();
             const base = hoy.getFullYear().toString() + ("0" + (hoy.getMonth() + 1)).slice(-2) + ("0" + hoy.getDate()).slice(-2);
@@ -297,22 +304,17 @@
             return "RET-" + base + "-" + result.snapshot.val().toString().padStart(3, "0");
         }
 
-        /* ENVÍO DEL FORMULARIO */
+        // Envío de Formulario
         form.addEventListener("submit", async e => {
             e.preventDefault();
 
-            // Preparar correos
             let correosFinales = [...listaCorreosBase];
-            if (tipo.value === "revision") {
-                correosFinales = correosFinales.concat(correosExtrasRevision);
-            }
+            if (tipo.value === "revision") correosFinales = correosFinales.concat(correosExtrasRevision);
             const destinatarios = correosFinales.join(",");
 
-            // Obtener Folio
             const folio = await generarFolio();
             document.getElementById("folio").textContent = folio;
 
-            // Redactar Cuerpo
             const hora = new Date().getHours();
             let saludo = (hora < 12) ? "Buenos días" : (hora < 19) ? "Buenas tardes" : "Buenas noches";
             
@@ -326,42 +328,35 @@
 
             // Guardar en Firebase
             await push(ref(db, "retornos"), {
-                folio,
-                fecha: new Date().toISOString(),
-                operacion: operacion.value,
-                operador: operador.value,
-                tipo: tipo.value,
-                placas: placas.value,
+                folio, fecha: new Date().toISOString(), operacion: operacion.value,
+                operador: operador.value, tipo: tipo.value, placas: placas.value,
                 mercancia: mercancia.value || ""
             });
 
-            // Preparar URL de Outlook
+            // Preparar Link para Outlook
             const asunto = encodeURIComponent(`${operacion.value} - ${tipo.options[tipo.selectedIndex].text}`);
-            const cuerpoUrl = encodeURIComponent(cuerpo);
+            const cuerpoEncoded = encodeURIComponent(cuerpo);
             
-            // Asignar link al botón del modal
-            btnOutlookFinal.href = `ms-outlook://compose?to=${destinatarios}&subject=${asunto}&body=${cuerpoUrl}`;
+            // Establecer el link directamente en el atributo href
+            linkOutlookFinal.href = `ms-outlook://compose?to=${destinatarios}&subject=${asunto}&body=${cuerpoEncoded}`;
 
             // Mostrar Modal
             modal.style.display = "flex";
 
-            // Resetear UI
+            // Limpiar formulario
             form.reset();
             mercanciaDiv.classList.add("hidden");
             btnGenerar.disabled = true;
         });
 
-        /* CONTROL DE MODAL */
-        window.cerrarModal = function() {
-            modal.style.display = "none";
-        };
+        window.cerrarModal = function() { modal.style.display = "none"; };
 
-        // Al hacer clic en el link de Outlook, cerramos el modal tras un pequeño delay
-        btnOutlookFinal.addEventListener("click", () => {
-            setTimeout(cerrarModal, 1000);
+        // Al hacer clic en el link, cerramos el modal después de un momento
+        linkOutlookFinal.addEventListener("click", () => {
+            setTimeout(cerrarModal, 1500);
         });
 
-        /* CONSULTA DE PLACAS */
+        // Consultas
         window.consultarPlacas = async function() {
             const contenedor = document.getElementById("tablaResultados");
             const fechaInput = document.getElementById("fechaConsulta").value;
@@ -387,7 +382,7 @@
             tablaVisible = true;
         };
 
-        /* EXPORTAR A EXCEL */
+        // Excel
         window.exportarExcel = async function() {
             const snapshot = await get(ref(db, "retornos"));
             let datos = [];
