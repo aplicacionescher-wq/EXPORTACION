@@ -235,8 +235,11 @@ Solicitud de Retornos Módulos
 
 <div id="selectorModal" class="modal">
 <div class="modal-content">
-<h3>¿Cómo deseas enviar el correo?</h3>
-<button onclick="abrirApp()">Abrir App Outlook</button>
+<h3>Confirmación de Envío</h3>
+<p style="font-size: 13px; color: #555; margin-bottom: 15px;">
+    Esta acción abrirá la aplicación <strong>Outlook</strong>. Asegúrese de que su cuenta <strong>@anam.gob.mx</strong> esté configurada.
+</p>
+<button onclick="abrirApp()">Abrir Outlook App</button>
 <button onclick="cerrarModal()" style="background:#666; margin-top:10px;">Cancelar</button>
 </div>
 </div>
@@ -271,7 +274,6 @@ const btnGenerar=document.getElementById("btnGenerar");
 
 let tablaVisible=false;
 
-/* ✅ LISTAS DE CORREOS RESTAURADAS */
 const listaCorreosBase = [
 "juan.reyesg@anam.gob.mx",
 "vyc.altamira@anam.gob.mx",
@@ -342,14 +344,12 @@ form.reportValidity();
 return;
 }
 
-/* ✅ LÓGICA DE CORREOS SEGÚN EL TIPO DE SOLICITUD */
 let correosFinales = [...listaCorreosBase];
 if (tipo.value === "revision") {
     correosFinales = correosFinales.concat(correosExtrasRevision);
 }
 
 window.destinatariosMailto = correosFinales.join(",");
-window.destinatariosWeb = correosFinales.join(";");
 
 const folio=await generarFolio();
 document.getElementById("folio").textContent=folio;
@@ -385,6 +385,7 @@ operador.value + "\n" +
     "ANAM Altamira";
 }
 
+// Guardar en Firebase
 await push(ref(db,"retornos"),{
 folio,
 fecha:new Date().toISOString(),
@@ -408,28 +409,26 @@ document.getElementById("folio").textContent="--";
 
 });
 
+// FUNCIÓN DE APERTURA CON RESTRICCIÓN DE APP
 window.abrirApp = function(){
-    const to = encodeURIComponent(window.destinatariosMailto);
+    const to = window.destinatariosMailto;
     const subject = encodeURIComponent(window.asuntoActual);
     const body = encodeURIComponent(window.cuerpoActual);
 
+    // Protocolo específico de Outlook para iOS y Android
     const outlookUrl = `ms-outlook://compose?to=${to}&subject=${subject}&body=${body}`;
+    
+    // Intentamos disparar la app
     window.location.href = outlookUrl;
 
+    // Lógica de detección: 
+    // Si después de 2 segundos el navegador sigue en primer plano, es que no abrió Outlook.
     setTimeout(() => {
         if (!document.hidden) {
-            window.location.href = `mailto:${to}?subject=${subject}&body=${body}`;
+            alert("❌ NO SE DETECTÓ LA APP DE OUTLOOK.\n\nEsta solicitud requiere obligatoriamente el uso de Outlook App para asegurar el envío desde el dominio @anam.gob.mx.\n\nPor favor, instale la aplicación o configúrela para continuar.");
         }
-    }, 500);
+    }, 2000);
 
-    cerrarModal();
-}
-
-window.abrirWeb = function(){
-    const url = "https://outlook.office.com/mail/deeplink/compose?to=" + encodeURIComponent(window.destinatariosWeb) +
-                "&subject=" + encodeURIComponent(window.asuntoActual) +
-                "&body=" + encodeURIComponent(window.cuerpoActual);
-    window.open(url, "_blank");
     cerrarModal();
 }
 
