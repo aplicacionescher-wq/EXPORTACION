@@ -272,7 +272,8 @@ const btnGenerar=document.getElementById("btnGenerar");
 
 let tablaVisible=false;
 
-const listaCorreos = [
+/* ✅ LISTAS DE CORREOS RESTAURADAS */
+const listaCorreosBase = [
 "juan.reyesg@anam.gob.mx",
 "vyc.altamira@anam.gob.mx",
 "alejandra.munoz@anam.gob.mx",
@@ -284,9 +285,11 @@ const listaCorreos = [
 "anahi.santiago@anam.gob.mx"
 ];
 
-// Definimos destinatarios globales para acceder desde las funciones de los botones
-window.destinatariosMailto = listaCorreos.join(",");
-window.destinatariosWeb = listaCorreos.join(";");
+const correosExtrasRevision = [
+"emilio.garin@anam.gob.mx",
+"sergio.diazr@anam.gob.mx",
+"oscar.narro@anam.gob.mx"
+];
 
 function validarFormulario(){
 btnGenerar.disabled = !form.checkValidity();
@@ -340,6 +343,15 @@ form.reportValidity();
 return;
 }
 
+/* ✅ LÓGICA DE CORREOS SEGÚN EL TIPO DE SOLICITUD */
+let correosFinales = [...listaCorreosBase];
+if (tipo.value === "revision") {
+    correosFinales = correosFinales.concat(correosExtrasRevision);
+}
+
+window.destinatariosMailto = correosFinales.join(",");
+window.destinatariosWeb = correosFinales.join(";");
+
 const folio=await generarFolio();
 document.getElementById("folio").textContent=folio;
 
@@ -361,29 +373,17 @@ operador.value + "\n" +
 "Módulos\n" +
 "ANAM Altamira";
 } else {
-if (operacion.value === "EXPORTACION") {
-cuerpo +=
-"El presente correo es para solicitar la apertura del carril de excesos a la exportación para el retorno al vehículo con las placas siguientes:\n\n" +
-"PLACAS:\n" + placas.value + "\n\n" +
-"Tipo de retorno:\n" +
-tipo.options[tipo.selectedIndex].text + "\n\n" +
-"Gracias.\n\n" +
-"Saludos cordiales,\n" +
-operador.value + "\n" +
-"Módulos \n" +
-"ANAM Altamira";
-} else {
-cuerpo +=
-"El presente correo es para solicitar la apertura de la Puerta Caracol para el retorno al vehículo con las placas siguientes:\n\n" +
-placas.value + "\n\n" +
-"Tipo de retorno:\n" +
-tipo.options[tipo.selectedIndex].text + "\n\n" +
-"Gracias.\n\n" +
-"Saludos cordiales,\n" +
-operador.value + "\n" +
-"Módulos\n" +
-"ANAM Altamira";
-}
+    const lugar = operacion.value === "EXPORTACION" ? "del carril de excesos a la exportación" : "de la Puerta Caracol";
+    cuerpo +=
+    "El presente correo es para solicitar la apertura " + lugar + " para el retorno al vehículo con las placas siguientes:\n\n" +
+    "PLACAS:\n" + placas.value + "\n\n" +
+    "Tipo de retorno:\n" +
+    tipo.options[tipo.selectedIndex].text + "\n\n" +
+    "Gracias.\n\n" +
+    "Saludos cordiales,\n" +
+    operador.value + "\n" +
+    "Módulos \n" +
+    "ANAM Altamira";
 }
 
 await push(ref(db,"retornos"),{
@@ -396,19 +396,10 @@ placas:placas.value,
 mercancia:mercancia.value || ""
 });
 
-// Guardamos asunto y cuerpo en window de forma segura ANTES de resetear el formulario
 window.asuntoActual = operacion.value + " - " + tipo.options[tipo.selectedIndex].text;
 window.cuerpoActual = cuerpo;
 
-const esMovil = /Android|iPhone|iPad|iPod/i.test(navigator.userAgent);
-
-if(esMovil){
-    window.location.href="mailto:"+window.destinatariosMailto+
-    "?subject="+encodeURIComponent(window.asuntoActual)+
-    "&body="+encodeURIComponent(window.cuerpoActual);
-}else{
-    modal.style.display="flex";
-}
+modal.style.display="flex";
 
 form.reset();
 mercanciaDiv.classList.add("hidden");
@@ -418,17 +409,24 @@ document.getElementById("folio").textContent="--";
 
 });
 
-/* ✅ FUNCIONES DE LOS BOTONES DEL MODAL (CORREGIDAS) */
-
 window.abrirApp = function(){
-    window.location.href="mailto:"+window.destinatariosMailto+
-    "?subject="+encodeURIComponent(window.asuntoActual)+
-    "&body="+encodeURIComponent(window.cuerpoActual);
+    const to = encodeURIComponent(window.destinatariosMailto);
+    const subject = encodeURIComponent(window.asuntoActual);
+    const body = encodeURIComponent(window.cuerpoActual);
+
+    const outlookUrl = `ms-outlook://compose?to=${to}&subject=${subject}&body=${body}`;
+    window.location.href = outlookUrl;
+
+    setTimeout(() => {
+        if (!document.hidden) {
+            window.location.href = `mailto:${to}?subject=${subject}&body=${body}`;
+        }
+    }, 500);
+
     cerrarModal();
 }
 
 window.abrirWeb = function(){
-    // Outlook Web requiere que los parámetros estén bien codificados en la URL
     const url = "https://outlook.office.com/mail/deeplink/compose?to=" + encodeURIComponent(window.destinatariosWeb) +
                 "&subject=" + encodeURIComponent(window.asuntoActual) +
                 "&body=" + encodeURIComponent(window.cuerpoActual);
