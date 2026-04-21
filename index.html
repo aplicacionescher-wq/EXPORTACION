@@ -272,8 +272,7 @@ const btnGenerar=document.getElementById("btnGenerar");
 
 let tablaVisible=false;
 
-/* ✅ LISTAS DE CORREOS */
-const listaCorreosBase = [
+const listaCorreos = [
 "juan.reyesg@anam.gob.mx",
 "vyc.altamira@anam.gob.mx",
 "alejandra.munoz@anam.gob.mx",
@@ -285,11 +284,9 @@ const listaCorreosBase = [
 "anahi.santiago@anam.gob.mx"
 ];
 
-const correosExtrasRevision = [
-"emilio.garin@anam.gob.mx",
-"sergio.diazr@anam.gob.mx",
-"oscar.narro@anam.gob.mx"
-];
+// Definimos destinatarios globales para acceder desde las funciones de los botones
+window.destinatariosMailto = listaCorreos.join(",");
+window.destinatariosWeb = listaCorreos.join(";");
 
 function validarFormulario(){
 btnGenerar.disabled = !form.checkValidity();
@@ -343,14 +340,6 @@ form.reportValidity();
 return;
 }
 
-let correosFinales = [...listaCorreosBase];
-if (tipo.value === "revision") {
-    correosFinales = correosFinales.concat(correosExtrasRevision);
-}
-
-window.destinatariosMailto = correosFinales.join(",");
-window.destinatariosWeb = correosFinales.join(";");
-
 const folio=await generarFolio();
 document.getElementById("folio").textContent=folio;
 
@@ -362,28 +351,39 @@ let cuerpo = saludo + ",\n\n";
 if (tipo.value === "revision") {
 cuerpo += 
 "Solicito su valioso apoyo para la apertura del carril de excesos de exportación, para el ingreso de excesos de dimensiones.\n\n" +
-"**PLACAS:**\n" + placas.value + "\n\n" +
-"**MERCANCÍA:**\n" + mercancia.value + "\n\n" +
-"Para posteriormente ser inspeccionado por el equipo **ZBV** del departamento de equipos no intrusivos en la explanada de vacíos de importación.\n\n" + 
+"PLACAS:\n" + placas.value + "\n\n" +
+"MERCANCÍA:\n" + mercancia.value + "\n\n" +
+"Para posteriormente ser inspeccionado por el equipo ZBV del departamento de equipos no intrusivos en la explanada de vacíos de importación.\n\n" + 
 "Favor de dar parte al personal del módulo cuando la unidad sea revisada y contestar correo electrónico una vez efectuada la revisión.\n\n" +
 "Gracias.\n\n" +
 "Saludos cordiales,\n" +
 operador.value + "\n" +
 "Módulos\n" +
 "ANAM Altamira";
-
 } else {
-    const textoOperacion = operacion.value === "EXPORTACION" ? "carril de excesos a la exportación" : "Puerta Caracol";
-    cuerpo +=
-    "El presente correo es para solicitar la apertura de " + textoOperacion + " para el retorno al vehículo con las placas siguientes:\n\n" +
-    "**PLACAS:**\n" + placas.value + "\n\n" +
-    "Tipo de retorno:\n" +
-    tipo.options[tipo.selectedIndex].text + "\n\n" +
-    "Gracias.\n\n" +
-    "Saludos cordiales,\n" +
-    operador.value + "\n" +
-    "Módulos\n" +
-    "ANAM Altamira";
+if (operacion.value === "EXPORTACION") {
+cuerpo +=
+"El presente correo es para solicitar la apertura del carril de excesos a la exportación para el retorno al vehículo con las placas siguientes:\n\n" +
+"PLACAS:\n" + placas.value + "\n\n" +
+"Tipo de retorno:\n" +
+tipo.options[tipo.selectedIndex].text + "\n\n" +
+"Gracias.\n\n" +
+"Saludos cordiales,\n" +
+operador.value + "\n" +
+"Módulos \n" +
+"ANAM Altamira";
+} else {
+cuerpo +=
+"El presente correo es para solicitar la apertura de la Puerta Caracol para el retorno al vehículo con las placas siguientes:\n\n" +
+placas.value + "\n\n" +
+"Tipo de retorno:\n" +
+tipo.options[tipo.selectedIndex].text + "\n\n" +
+"Gracias.\n\n" +
+"Saludos cordiales,\n" +
+operador.value + "\n" +
+"Módulos\n" +
+"ANAM Altamira";
+}
 }
 
 await push(ref(db,"retornos"),{
@@ -396,11 +396,19 @@ placas:placas.value,
 mercancia:mercancia.value || ""
 });
 
-window.asunto = operacion.value + " - " + tipo.options[tipo.selectedIndex].text;
-window.cuerpo=cuerpo;
+// Guardamos asunto y cuerpo en window de forma segura ANTES de resetear el formulario
+window.asuntoActual = operacion.value + " - " + tipo.options[tipo.selectedIndex].text;
+window.cuerpoActual = cuerpo;
 
-// Mostramos el modal para que el usuario elija
-modal.style.display="flex";
+const esMovil = /Android|iPhone|iPad|iPod/i.test(navigator.userAgent);
+
+if(esMovil){
+    window.location.href="mailto:"+window.destinatariosMailto+
+    "?subject="+encodeURIComponent(window.asuntoActual)+
+    "&body="+encodeURIComponent(window.cuerpoActual);
+}else{
+    modal.style.display="flex";
+}
 
 form.reset();
 mercanciaDiv.classList.add("hidden");
@@ -410,67 +418,52 @@ document.getElementById("folio").textContent="--";
 
 });
 
-/* ✅ ESTA ES LA FUNCION QUE FUERZA LA APP DE OUTLOOK */
-window.abrirApp = function() {
-    const to = encodeURIComponent(window.destinatariosMailto);
-    const subject = encodeURIComponent(window.asunto);
-    const body = encodeURIComponent(window.cuerpo);
+/* ✅ FUNCIONES DE LOS BOTONES DEL MODAL (CORREGIDAS) */
 
-    // Protocolo directo para abrir la ventana de REDACTAR en la APP de Outlook
-    const outlookUrl = `ms-outlook://compose?to=${to}&subject=${subject}&body=${body}`;
-    
-    // Intentamos abrir Outlook directamente
-    window.location.href = outlookUrl;
-
-    // Respaldo: Si en 500ms el navegador sigue activo es que no tiene la app de Outlook instalada
-    // Entonces usamos el mailto tradicional como plan B
-    setTimeout(() => {
-        if (!document.hidden) {
-            window.location.href = `mailto:${to}?subject=${subject}&body=${body}`;
-        }
-    }, 500);
-
+window.abrirApp = function(){
+    window.location.href="mailto:"+window.destinatariosMailto+
+    "?subject="+encodeURIComponent(window.asuntoActual)+
+    "&body="+encodeURIComponent(window.cuerpoActual);
     cerrarModal();
 }
 
-window.abrirWeb=function(){
-    window.open(
-    "https://outlook.office.com/mail/deeplink/compose?to="+encodeURIComponent(window.destinatariosWeb)+
-    "&subject="+encodeURIComponent(window.asunto)+
-    "&body="+encodeURIComponent(window.cuerpo),
-    "_blank"
-    );
+window.abrirWeb = function(){
+    // Outlook Web requiere que los parámetros estén bien codificados en la URL
+    const url = "https://outlook.office.com/mail/deeplink/compose?to=" + encodeURIComponent(window.destinatariosWeb) +
+                "&subject=" + encodeURIComponent(window.asuntoActual) +
+                "&body=" + encodeURIComponent(window.cuerpoActual);
+    window.open(url, "_blank");
     cerrarModal();
 }
 
-window.cerrarModal=function(){
+window.cerrarModal = function(){
     modal.style.display="none";
 }
 
 window.consultarPlacas = async function(){
-    const contenedor = document.getElementById("tablaResultados");
-    const fechaInput = document.getElementById("fechaConsulta").value;
-    if(tablaVisible){ contenedor.innerHTML=""; tablaVisible=false; return; }
-    const snapshot = await get(ref(db,"retornos"));
-    let fechaFiltro = fechaInput || new Date().toISOString().split("T")[0];
-    let html="<table><tr><th>Operador</th><th>Placas</th></tr>";
-    snapshot.forEach(doc=>{
-        let d=doc.val();
-        if(d.fecha.startsWith(fechaFiltro)) html+="<tr><td>"+d.operador+"</td><td>"+d.placas+"</td></tr>";
-    });
-    html+="</table>";
-    contenedor.innerHTML=html;
-    tablaVisible=true;
+const contenedor = document.getElementById("tablaResultados");
+const fechaInput = document.getElementById("fechaConsulta").value;
+if(tablaVisible){ contenedor.innerHTML=""; tablaVisible=false; return; }
+const snapshot = await get(ref(db,"retornos"));
+let fechaFiltro = fechaInput || new Date().toISOString().split("T")[0];
+let html="<table><tr><th>Operador</th><th>Placas</th></tr>";
+snapshot.forEach(doc=>{
+let d=doc.val();
+if(d.fecha.startsWith(fechaFiltro)) html+="<tr><td>"+d.operador+"</td><td>"+d.placas+"</td></tr>";
+});
+html+="</table>";
+contenedor.innerHTML=html;
+tablaVisible=true;
 }
 
 window.exportarExcel=async function(){
-    const snapshot=await get(ref(db,"retornos"));
-    let datos=[];
-    snapshot.forEach(doc=>datos.push(doc.val()));
-    const ws=XLSX.utils.json_to_sheet(datos);
-    const wb=XLSX.utils.book_new();
-    XLSX.utils.book_append_sheet(wb,ws,"Retornos");
-    XLSX.writeFile(wb,"Retornos_ANAM.xlsx");
+const snapshot=await get(ref(db,"retornos"));
+let datos=[];
+snapshot.forEach(doc=>datos.push(doc.val()));
+const ws=XLSX.utils.json_to_sheet(datos);
+const wb=XLSX.utils.book_new();
+XLSX.utils.book_append_sheet(wb,ws,"Retornos");
+XLSX.writeFile(wb,"Retornos_ANAM.xlsx");
 }
 
 </script>
