@@ -10,7 +10,7 @@
     <script src="https://cdn.jsdelivr.net/npm/xlsx/dist/xlsx.full.min.js"></script>
 
     <style>
-        /* Estilos Base e Identidad Visual */
+        /* --- ESTILOS BASE --- */
         body {
             margin: 0;
             font-family: Arial, Helvetica, sans-serif;
@@ -27,7 +27,7 @@
             text-align: center;
         }
 
-        /* Contenedor Principal */
+        /* --- CONTENEDOR --- */
         .container {
             position: relative;
             background: #ffffffee;
@@ -40,7 +40,6 @@
             overflow: hidden;
         }
 
-        /* Logo de Fondo Institucional */
         .container::before {
             content: "";
             position: absolute;
@@ -51,7 +50,7 @@
             pointer-events: none;
         }
 
-        /* Elemento Gota (Logo Superior) */
+        /* --- LOGOTIPO GOTA --- */
         .logo-gota {
             position: absolute;
             top: -40px;
@@ -87,7 +86,7 @@
             font-size: 15px;
         }
 
-        /* Formulario y Controles */
+        /* --- FORMULARIO --- */
         label { font-weight: bold; font-size: 14px; }
 
         select, input, textarea {
@@ -113,7 +112,6 @@
             cursor: pointer;
             font-weight: bold;
             margin-top: 6px;
-            transition: 0.3s;
         }
 
         button:hover { opacity: 0.9; }
@@ -121,7 +119,7 @@
 
         .hidden { display: none; }
 
-        /* Modal de Confirmación */
+        /* --- MODAL --- */
         .modal {
             display: none;
             position: fixed;
@@ -139,10 +137,9 @@
             width: 320px;
             text-align: center;
             border-top: 6px solid #611232;
-            box-shadow: 0 15px 30px rgba(0,0,0,0.3);
+            box-shadow: 0 10px 30px rgba(0,0,0,0.3);
         }
 
-        /* Botón estilo enlace para Outlook */
         .btn-outlook {
             display: block;
             background: #1E5B4F;
@@ -155,14 +152,15 @@
             font-size: 15px;
         }
 
-        /* Tabla de Resultados */
+        /* --- TABLAS --- */
         table { width: 100%; border-collapse: collapse; margin-top: 15px; }
-        th, td { border: 1px solid #ccc; padding: 8px; font-size: 12px; text-align: center; }
+        th, td { border: 1px solid #ccc; padding: 6px; font-size: 12px; text-align: center; }
         th { background: #611232; color: #fff; }
 
         .footer { text-align: center; font-size: 11px; color: #98989A; margin: 20px 0; }
     </style>
 </head>
+
 <body>
 
     <div class="top-bar">Gobierno de México | Agencia Nacional de Aduanas de México</div>
@@ -183,7 +181,7 @@
             </select>
 
             <label>Operador</label>
-            <input type="text" id="operador" placeholder="Escriba su nombre" required>
+            <input type="text" id="operador" placeholder="Nombre completo" required>
 
             <label>Tipo de Solicitud</label>
             <select id="tipo" required>
@@ -191,7 +189,7 @@
                 <option value="horario">Retorno Fuera De Horario</option>
                 <option value="sin_extra">Retorno Sin Servicio Extraordinario</option>
                 <option value="carril">Retorno Por Equivocación de Carril</option>
-                <option value="revision">Solicitud de Revisión Con ZBV De Mercancía Sobre-Dimensionada</option>
+                <option value="revision">Solicitud de Revisión De Mercancía Sobre-Dimensionada</option>
             </select>
 
             <label>Placas</label>
@@ -199,12 +197,12 @@
 
             <div id="mercanciaDiv" class="hidden">
                 <label>Descripción de la Mercancía</label>
-                <textarea id="mercancia" placeholder="Detalle de la mercancía"></textarea>
+                <textarea id="mercancia" placeholder="Detalle de carga"></textarea>
             </div>
 
             <button type="submit" id="btnGenerar" disabled>Generar Correo</button>
 
-            <hr style="margin: 25px 0; border: 0; border-top: 1px solid #ccc;">
+            <hr style="margin:20px 0; border:0; border-top:1px solid #ccc;">
 
             <label>Consulta de Registros</label>
             <input type="date" id="fechaConsulta">
@@ -220,21 +218,19 @@
     <div id="selectorModal" class="modal">
         <div class="modal-content">
             <h3>Solicitud Generada</h3>
-            <p style="font-size: 13px; color: #444; line-height: 1.4;">
-                Los datos se han guardado. Para finalizar, presione el botón de abajo para abrir <strong>Outlook App</strong>.
-            </p>
+            <p style="font-size: 13px; color: #555;">Presione el botón para abrir la aplicación oficial de <strong>Outlook</strong>.</p>
             
-            <a id="linkOutlookFinal" href="#" class="btn-outlook">Abrir Outlook Ahora</a>
-
-            <button onclick="cerrarModal()" style="background:#666; margin-top:5px; padding: 8px;">Cerrar</button>
+            <a id="linkOutlookFinal" href="#" class="btn-outlook">Abrir Outlook App</a>
+            
+            <button onclick="cerrarModal()" style="background:#666; margin-top:5px; padding: 8px;">Cancelar</button>
         </div>
     </div>
 
     <script type="module">
+        /* --- FIREBASE SETUP --- */
         import { initializeApp } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-app.js";
         import { getDatabase, ref, push, runTransaction, get } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-database.js";
 
-        // Configuración Firebase
         const firebaseConfig = {
             apiKey: "TU_API_KEY",
             authDomain: "retornos-anam-altamira.firebaseapp.com",
@@ -248,7 +244,7 @@
         const app = initializeApp(firebaseConfig);
         const db = getDatabase(app);
 
-        // Referencias DOM
+        /* --- ELEMENTOS --- */
         const form = document.getElementById("formRetorno");
         const tipo = document.getElementById("tipo");
         const mercanciaDiv = document.getElementById("mercanciaDiv");
@@ -262,12 +258,15 @@
 
         let tablaVisible = false;
 
-        // Correos
+        /* --- CORREOS --- */
         const listaCorreosBase = ["juan.reyesg@anam.gob.mx", "vyc.altamira@anam.gob.mx", "alejandra.munoz@anam.gob.mx", "jorge.silva@anam.gob.mx", "abraham.gomez@anam.gob.mx", "daniel.santosh@anam.gob.mx", "christian.monrreal@anam.gob.mx", "monica.becerra@anam.gob.mx", "anahi.santiago@anam.gob.mx"];
         const correosExtrasRevision = ["emilio.garin@anam.gob.mx", "sergio.diazr@anam.gob.mx", "oscar.narro@anam.gob.mx"];
 
-        // Lógica de UI
-        function validarFormulario() { btnGenerar.disabled = !form.checkValidity(); }
+        /* --- VALIDACIÓN --- */
+        function validarFormulario() {
+            btnGenerar.disabled = !form.checkValidity();
+        }
+
         form.addEventListener("input", validarFormulario);
 
         tipo.addEventListener("change", () => {
@@ -292,10 +291,9 @@
         }
         setInterval(actualizarFecha, 1000);
         actualizarFecha();
-
         document.getElementById("fechaConsulta").value = new Date().toISOString().split("T")[0];
 
-        // Folio Dinámico
+        /* --- FOLIOS --- */
         async function generarFolio() {
             const hoy = new Date();
             const base = hoy.getFullYear().toString() + ("0" + (hoy.getMonth() + 1)).slice(-2) + ("0" + hoy.getDate()).slice(-2);
@@ -304,7 +302,7 @@
             return "RET-" + base + "-" + result.snapshot.val().toString().padStart(3, "0");
         }
 
-        // Envío de Formulario
+        /* --- ENVÍO --- */
         form.addEventListener("submit", async e => {
             e.preventDefault();
 
@@ -320,74 +318,55 @@
             
             let cuerpo = saludo + ",\n\n";
             if (tipo.value === "revision") {
-                cuerpo += `Solicito su valioso apoyo para la apertura del carril de excesos de exportación, para el ingreso de excesos de dimensiones.\n\nPLACAS:\n${placas.value}\n\nMERCANCÍA:\n${mercancia.value}\n\nPara posteriormente ser inspeccionado por el equipo ZBV del departamento de equipos no intrusivos en la explanada de vacíos de importación.\n\nFavor de dar parte al personal del módulo cuando la unidad sea revisada y contestar correo electrónico una vez efectuada la revisión.\n\nGracias.\n\nSaludos cordiales,\n${operador.value}\nMódulos\nANAM Altamira`;
+                cuerpo += `Por medio del presente, se solicita el valioso apoyo de la Subdirección de Vigilancia y Control para realizar la apertura del carril de excesos de exportación. Lo anterior, con la finalidad de permitir el ingreso y posicionamiento de la unidad con exceso de dimensiones en la explanada de vacíos.\n\nPLACAS:\n${placas.value}\n\nMERCANCÍA:\n${mercancia.value}\n\nPosteriormente, la unidad será inspeccionada por el equipo ZBV del Departamento de Equipos No Intrusivos.\n\nGracias.\n\nSaludos cordiales,\n${operador.value}\nMódulos\nANAM Altamira`;
             } else {
                 const lugar = operacion.value === "EXPORTACION" ? "del carril de excesos a la exportación" : "de la Puerta Caracol";
                 cuerpo += `El presente correo es para solicitar la apertura ${lugar} para el retorno al vehículo con las placas siguientes:\n\nPLACAS:\n${placas.value}\n\nTipo de retorno:\n${tipo.options[tipo.selectedIndex].text}\n\nGracias.\n\nSaludos cordiales,\n${operador.value}\nMódulos\nANAM Altamira`;
             }
 
-            // Guardar en Firebase
+            // Guardar en DB
             await push(ref(db, "retornos"), {
                 folio, fecha: new Date().toISOString(), operacion: operacion.value,
                 operador: operador.value, tipo: tipo.value, placas: placas.value,
                 mercancia: mercancia.value || ""
             });
 
-            // Preparar Link para Outlook
+            // Preparar Link Protocolo Directo
             const asunto = encodeURIComponent(`${operacion.value} - ${tipo.options[tipo.selectedIndex].text}`);
             const cuerpoEncoded = encodeURIComponent(cuerpo);
             
-            // Establecer el link directamente en el atributo href
+            // EL SECRETO: Usar ms-outlook:// en un enlace real
             linkOutlookFinal.href = `ms-outlook://compose?to=${destinatarios}&subject=${asunto}&body=${cuerpoEncoded}`;
 
-            // Mostrar Modal
             modal.style.display = "flex";
-
-            // Limpiar formulario
             form.reset();
             mercanciaDiv.classList.add("hidden");
             btnGenerar.disabled = true;
         });
 
         window.cerrarModal = function() { modal.style.display = "none"; };
+        linkOutlookFinal.addEventListener("click", () => { setTimeout(cerrarModal, 1500); });
 
-        // Al hacer clic en el link, cerramos el modal después de un momento
-        linkOutlookFinal.addEventListener("click", () => {
-            setTimeout(cerrarModal, 1500);
-        });
-
-        // Consultas
+        /* --- CONSULTAS --- */
         window.consultarPlacas = async function() {
             const contenedor = document.getElementById("tablaResultados");
-            const fechaInput = document.getElementById("fechaConsulta").value;
-            
-            if (tablaVisible) {
-                contenedor.innerHTML = "";
-                tablaVisible = false;
-                return;
-            }
-
+            if (tablaVisible) { contenedor.innerHTML = ""; tablaVisible = false; return; }
             const snapshot = await get(ref(db, "retornos"));
+            const fechaFiltro = document.getElementById("fechaConsulta").value;
             let html = "<table><tr><th>Operador</th><th>Placas</th></tr>";
-            
             snapshot.forEach(doc => {
                 let d = doc.val();
-                if (d.fecha.startsWith(fechaInput)) {
-                    html += `<tr><td>${d.operador}</td><td>${d.placas}</td></tr>`;
-                }
+                if (d.fecha.startsWith(fechaFiltro)) html += `<tr><td>${d.operador}</td><td>${d.placas}</td></tr>`;
             });
-            
             html += "</table>";
             contenedor.innerHTML = html;
             tablaVisible = true;
         };
 
-        // Excel
         window.exportarExcel = async function() {
             const snapshot = await get(ref(db, "retornos"));
             let datos = [];
             snapshot.forEach(doc => datos.push(doc.val()));
-            
             const ws = XLSX.utils.json_to_sheet(datos);
             const wb = XLSX.utils.book_new();
             XLSX.utils.book_append_sheet(wb, ws, "Retornos");
