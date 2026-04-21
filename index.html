@@ -203,7 +203,7 @@ Solicitud de Retornos Módulos
 <option value="horario">Retorno Fuera De Horario</option>
 <option value="sin_extra">Retorno Sin Servicio Extraordinario</option>
 <option value="carril">Retorno Por Equivocación de Carril</option>
-<option value="revision">Solicitud de Revisión De Mercancía Sobre-Dimensionada</option>
+<option value="revision">Solicitud de Revisión Con ZBV De Mercancía Sobre-Dimensionada</option>
 </select>
 
 <label>Placas</label>
@@ -237,7 +237,6 @@ Solicitud de Retornos Módulos
 <div class="modal-content">
 <h3>¿Cómo deseas enviar el correo?</h3>
 <button onclick="abrirApp()">Abrir App Outlook</button>
-<button onclick="abrirWeb()">Abrir Outlook Web</button>
 <button onclick="cerrarModal()" style="background:#666; margin-top:10px;">Cancelar</button>
 </div>
 </div>
@@ -272,14 +271,23 @@ const btnGenerar=document.getElementById("btnGenerar");
 
 let tablaVisible=false;
 
+/* ✅ LISTAS DE CORREOS RESTAURADAS */
 const listaCorreosBase = [
-"juan.reyesg@anam.gob.mx", "vyc.altamira@anam.gob.mx", "alejandra.munoz@anam.gob.mx",
-"jorge.silva@anam.gob.mx", "abraham.gomez@anam.gob.mx", "daniel.santosh@anam.gob.mx",
-"christian.monrreal@anam.gob.mx", "monica.becerra@anam.gob.mx", "anahi.santiago@anam.gob.mx"
+"juan.reyesg@anam.gob.mx",
+"vyc.altamira@anam.gob.mx",
+"alejandra.munoz@anam.gob.mx",
+"jorge.silva@anam.gob.mx",
+"abraham.gomez@anam.gob.mx",
+"daniel.santosh@anam.gob.mx",
+"christian.monrreal@anam.gob.mx",
+"monica.becerra@anam.gob.mx",
+"anahi.santiago@anam.gob.mx"
 ];
 
 const correosExtrasRevision = [
-"emilio.garin@anam.gob.mx", "sergio.diazr@anam.gob.mx", "oscar.narro@anam.gob.mx"
+"emilio.garin@anam.gob.mx",
+"sergio.diazr@anam.gob.mx",
+"oscar.narro@anam.gob.mx"
 ];
 
 function validarFormulario(){
@@ -317,7 +325,10 @@ document.getElementById("fechaConsulta").value = new Date().toISOString().split(
 
 async function generarFolio(){
 const hoy=new Date();
-const base=hoy.getFullYear().toString()+("0"+(hoy.getMonth()+1)).slice(-2)+("0"+hoy.getDate()).slice(-2);
+const base=hoy.getFullYear().toString()+
+("0"+(hoy.getMonth()+1)).slice(-2)+
+("0"+hoy.getDate()).slice(-2);
+
 const contadorRef=ref(db,'contadorFolios/'+base);
 const result=await runTransaction(contadorRef,(c)=>(c||0)+1);
 return "RET-"+base+"-"+result.snapshot.val().toString().padStart(3,"0");
@@ -331,12 +342,12 @@ form.reportValidity();
 return;
 }
 
+/* ✅ LÓGICA DE CORREOS SEGÚN EL TIPO DE SOLICITUD */
 let correosFinales = [...listaCorreosBase];
 if (tipo.value === "revision") {
     correosFinales = correosFinales.concat(correosExtrasRevision);
 }
 
-// Persistencia de destinatarios
 window.destinatariosMailto = correosFinales.join(",");
 window.destinatariosWeb = correosFinales.join(";");
 
@@ -345,6 +356,7 @@ document.getElementById("folio").textContent=folio;
 
 const hora = new Date().getHours();
 let saludo = (hora < 12) ? "Buenos días" : (hora < 19) ? "Buenas tardes" : "Buenas noches";
+
 let cuerpo = saludo + ",\n\n";
 
 if (tipo.value === "revision") {
@@ -393,6 +405,7 @@ mercanciaDiv.classList.add("hidden");
 mercancia.required=false;
 btnGenerar.disabled=true;
 document.getElementById("folio").textContent="--";
+
 });
 
 window.abrirApp = function(){
@@ -413,18 +426,10 @@ window.abrirApp = function(){
 }
 
 window.abrirWeb = function(){
-    const to = encodeURIComponent(window.destinatariosWeb);
-    const subject = encodeURIComponent(window.asuntoActual);
-    const body = encodeURIComponent(window.cuerpoActual);
-    
-    // Nueva URL de Outlook Web mejorada para navegadores móviles
-    const url = `https://outlook.office.com/mail/0/deeplink/compose?to=${to}&subject=${subject}&body=${body}`;
-    
-    if(/Android|iPhone|iPad|iPod/i.test(navigator.userAgent)){
-        window.location.href = url;
-    } else {
-        window.open(url, "_blank");
-    }
+    const url = "https://outlook.office.com/mail/deeplink/compose?to=" + encodeURIComponent(window.destinatariosWeb) +
+                "&subject=" + encodeURIComponent(window.asuntoActual) +
+                "&body=" + encodeURIComponent(window.cuerpoActual);
+    window.open(url, "_blank");
     cerrarModal();
 }
 
