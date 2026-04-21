@@ -190,6 +190,7 @@ Solicitud de Retornos Módulos
 
 <label>Tipo de Operación</label>
 <select id="operacion" required>
+<option>IMPORTACION</option>
 <option selected>EXPORTACION</option>
 </select>
 
@@ -249,7 +250,7 @@ import { initializeApp } from "https://www.gstatic.com/firebasejs/10.12.2/fireba
 import { getDatabase, ref, push, runTransaction, get } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-database.js";
 
 const firebaseConfig = {
-apiKey: "TU_API_KEY", // REEMPLAZAR CON TU API KEY REAL
+apiKey: "TU_API_KEY",
 authDomain: "retornos-anam-altamira.firebaseapp.com",
 databaseURL: "https://retornos-anam-altamira-default-rtdb.firebaseio.com",
 projectId: "retornos-anam-altamira",
@@ -381,33 +382,40 @@ mercanciaDiv.classList.add("hidden");
 btnGenerar.disabled=true;
 });
 
+// FUNCIÓN CORREGIDA PARA ANDROID (Detecta si la app abrió antes de mostrar error)
 window.abrirApp = function(){
     const to = window.destinatariosMailto;
     const subject = encodeURIComponent(window.asuntoActual);
     const body = encodeURIComponent(window.cuerpoActual);
 
-    // Intentar primero con el esquema directo de Outlook
     const outlookUrl = `ms-outlook://compose?to=${to}&subject=${subject}&body=${body}`;
-    const start = Date.now();
+    const mailtoUrl = `mailto:${to}?subject=${subject}&body=${body}`;
     
+    // 1. Intentamos el protocolo directo de Outlook
     window.location.href = outlookUrl;
 
-    // Si en 2 segundos no cambió la visibilidad (no salió del navegador), 
-    // asumimos que el protocolo ms-outlook falló o no está registrado.
+    // 2. Usamos una variable para rastrear si el usuario salió de la página
+    let paginaOculta = false;
+    const checkVisibility = () => { if(document.hidden) paginaOculta = true; };
+    window.addEventListener("visibilitychange", checkVisibility);
+
+    // 3. Esperamos 2.5 segundos para dar tiempo a Android/iOS de cambiar de app
     setTimeout(() => {
-        if (Date.now() - start < 2500) {
-            // Intentar con mailto pero forzando a que el sistema decida.
-            // Si el usuario tiene Outlook como predeterminado, se abrirá.
-            window.location.href = `mailto:${to}?subject=${subject}&body=${body}`;
+        window.removeEventListener("visibilitychange", checkVisibility);
+        
+        // Si la página NO se ocultó, significa que Outlook NO abrió
+        if (!paginaOculta) {
+            // Intentamos el mailto estándar por si Outlook es el predeterminado
+            window.location.href = mailtoUrl;
             
-            // Si después de este segundo intento sigue aquí, mostrar error definitivo.
+            // Si después de 1 segundo más sigue aquí, avisamos al usuario
             setTimeout(() => {
                 if (!document.hidden) {
-                    alert("❌ ERROR: NO SE PUDO ABRIR LA APP.\n\nPasos obligatorios:\n1. Instale la App oficial de Outlook.\n2. En Ajustes de su celular, defina Outlook como 'App de correo por omisión'.\n3. Cierre esta ventana e intente de nuevo.");
+                    alert("❌ ERROR: NO SE PUDO ABRIR OUTLOOK.\n\nVerifique que la App de Outlook esté instalada y configurada como su aplicación de correo predeterminada.");
                 }
-            }, 1000);
+            }, 1500);
         }
-    }, 500);
+    }, 2500);
 
     cerrarModal();
 }
