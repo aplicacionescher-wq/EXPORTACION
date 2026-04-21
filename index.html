@@ -190,7 +190,6 @@ Solicitud de Retornos Módulos
 
 <label>Tipo de Operación</label>
 <select id="operacion" required>
-<option>IMPORTACION</option>
 <option selected>EXPORTACION</option>
 </select>
 
@@ -203,7 +202,7 @@ Solicitud de Retornos Módulos
 <option value="horario">Retorno Fuera De Horario</option>
 <option value="sin_extra">Retorno Sin Servicio Extraordinario</option>
 <option value="carril">Retorno Por Equivocación de Carril</option>
-<option value="revision">Solicitud de Revisión De Mercancía Sobre-Dimensionada</option>
+<option value="revision">Solicitud de Revisión Con ZBV De Mercancía Sobre-Dimensionada</option>
 </select>
 
 <label>Placas</label>
@@ -272,7 +271,7 @@ const btnGenerar=document.getElementById("btnGenerar");
 
 let tablaVisible=false;
 
-/* ✅ LISTAS DE CORREOS RESTAURADAS */
+// Listas de correos configuradas para @anam.gob.mx
 const listaCorreosBase = [
 "juan.reyesg@anam.gob.mx",
 "vyc.altamira@anam.gob.mx",
@@ -343,12 +342,13 @@ form.reportValidity();
 return;
 }
 
-/* ✅ LÓGICA DE CORREOS SEGÚN EL TIPO DE SOLICITUD */
+// Lógica de correos según selección
 let correosFinales = [...listaCorreosBase];
 if (tipo.value === "revision") {
     correosFinales = correosFinales.concat(correosExtrasRevision);
 }
 
+// Preparamos destinatarios (Mailto usa comas, Web usa punto y coma)
 window.destinatariosMailto = correosFinales.join(",");
 window.destinatariosWeb = correosFinales.join(";");
 
@@ -372,17 +372,18 @@ cuerpo +=
 operador.value + "\n" +
 "Módulos\n" +
 "ANAM Altamira";
+
 } else {
-    const lugar = operacion.value === "EXPORTACION" ? "del carril de excesos a la exportación" : "de la Puerta Caracol";
+    const textoOperacion = operacion.value === "EXPORTACION" ? "del carril de excesos a la exportación" : "de la Puerta Caracol";
     cuerpo +=
-    "El presente correo es para solicitar la apertura " + lugar + " para el retorno al vehículo con las placas siguientes:\n\n" +
+    "El presente correo es para solicitar la apertura " + textoOperacion + " para el retorno al vehículo con las placas siguientes:\n\n" +
     "PLACAS:\n" + placas.value + "\n\n" +
     "Tipo de retorno:\n" +
     tipo.options[tipo.selectedIndex].text + "\n\n" +
     "Gracias.\n\n" +
     "Saludos cordiales,\n" +
     operador.value + "\n" +
-    "Módulos \n" +
+    "Módulos\n" +
     "ANAM Altamira";
 }
 
@@ -396,11 +397,14 @@ placas:placas.value,
 mercancia:mercancia.value || ""
 });
 
+// Guardamos datos para los botones del modal
 window.asuntoActual = operacion.value + " - " + tipo.options[tipo.selectedIndex].text;
 window.cuerpoActual = cuerpo;
 
+// Mostrar modal siempre
 modal.style.display="flex";
 
+// Reiniciar formulario
 form.reset();
 mercanciaDiv.classList.add("hidden");
 mercancia.required=false;
@@ -409,14 +413,17 @@ document.getElementById("folio").textContent="--";
 
 });
 
-window.abrirApp = function(){
+// FUNCION ABRIR APP (FORZAR OUTLOOK)
+window.abrirApp = function() {
     const to = encodeURIComponent(window.destinatariosMailto);
     const subject = encodeURIComponent(window.asuntoActual);
     const body = encodeURIComponent(window.cuerpoActual);
 
+    // Intento con protocolo de Outlook
     const outlookUrl = `ms-outlook://compose?to=${to}&subject=${subject}&body=${body}`;
     window.location.href = outlookUrl;
 
+    // Respaldo por si no tiene la app
     setTimeout(() => {
         if (!document.hidden) {
             window.location.href = `mailto:${to}?subject=${subject}&body=${body}`;
@@ -426,42 +433,56 @@ window.abrirApp = function(){
     cerrarModal();
 }
 
-window.abrirWeb = function(){
-    const url = "https://outlook.office.com/mail/deeplink/compose?to=" + encodeURIComponent(window.destinatariosWeb) +
-                "&subject=" + encodeURIComponent(window.asuntoActual) +
-                "&body=" + encodeURIComponent(window.cuerpoActual);
-    window.open(url, "_blank");
+// FUNCION ABRIR WEB (CORREGIDA PARA CELULARES)
+window.abrirWeb = function() {
+    const to = encodeURIComponent(window.destinatariosWeb);
+    const subject = encodeURIComponent(window.asuntoActual);
+    const body = encodeURIComponent(window.cuerpoActual);
+    const url = `https://outlook.office.com/mail/deeplink/compose?to=${to}&subject=${subject}&body=${body}`;
+
+    const esMovil = /Android|iPhone|iPad|iPod/i.test(navigator.userAgent);
+    
+    if(esMovil) {
+        // En móvil usamos redirección directa para evitar bloqueos de popups
+        window.location.href = url;
+    } else {
+        window.open(url, "_blank");
+    }
     cerrarModal();
 }
 
-window.cerrarModal = function(){
+window.cerrarModal = function() {
     modal.style.display="none";
 }
 
-window.consultarPlacas = async function(){
-const contenedor = document.getElementById("tablaResultados");
-const fechaInput = document.getElementById("fechaConsulta").value;
-if(tablaVisible){ contenedor.innerHTML=""; tablaVisible=false; return; }
-const snapshot = await get(ref(db,"retornos"));
-let fechaFiltro = fechaInput || new Date().toISOString().split("T")[0];
-let html="<table><tr><th>Operador</th><th>Placas</th></tr>";
-snapshot.forEach(doc=>{
-let d=doc.val();
-if(d.fecha.startsWith(fechaFiltro)) html+="<tr><td>"+d.operador+"</td><td>"+d.placas+"</td></tr>";
-});
-html+="</table>";
-contenedor.innerHTML=html;
-tablaVisible=true;
+window.consultarPlacas = async function() {
+    const contenedor = document.getElementById("tablaResultados");
+    const fechaInput = document.getElementById("fechaConsulta").value;
+    if(tablaVisible) { contenedor.innerHTML=""; tablaVisible=false; return; }
+    
+    const snapshot = await get(ref(db,"retornos"));
+    let fechaFiltro = fechaInput || new Date().toISOString().split("T")[0];
+    
+    let html="<table><tr><th>Operador</th><th>Placas</th></tr>";
+    snapshot.forEach(doc=>{
+        let d=doc.val();
+        if(d.fecha.startsWith(fechaFiltro)) {
+            html+="<tr><td>"+d.operador+"</td><td>"+d.placas+"</td></tr>";
+        }
+    });
+    html+="</table>";
+    contenedor.innerHTML=html;
+    tablaVisible=true;
 }
 
-window.exportarExcel=async function(){
-const snapshot=await get(ref(db,"retornos"));
-let datos=[];
-snapshot.forEach(doc=>datos.push(doc.val()));
-const ws=XLSX.utils.json_to_sheet(datos);
-const wb=XLSX.utils.book_new();
-XLSX.utils.book_append_sheet(wb,ws,"Retornos");
-XLSX.writeFile(wb,"Retornos_ANAM.xlsx");
+window.exportarExcel = async function() {
+    const snapshot = await get(ref(db,"retornos"));
+    let datos=[];
+    snapshot.forEach(doc=>datos.push(doc.val()));
+    const ws=XLSX.utils.json_to_sheet(datos);
+    const wb=XLSX.utils.book_new();
+    XLSX.utils.book_append_sheet(wb,ws,"Retornos");
+    XLSX.writeFile(wb,"Retornos_ANAM.xlsx");
 }
 
 </script>
