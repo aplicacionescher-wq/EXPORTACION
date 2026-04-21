@@ -237,12 +237,14 @@ Solicitud de Retornos Módulos
 <div class="modal-content">
 <h3>Confirmación de Envío</h3>
 <p style="font-size: 13px; color: #555; margin-bottom: 15px;">
-    Se enviará la solicitud mediante la aplicación oficial de <strong>Outlook</strong>.
+    Se abrirá <strong>Outlook App</strong> para el envío institucional.
 </p>
 <button onclick="abrirApp()">Abrir Outlook App</button>
 <button onclick="cerrarModal()" style="background:#666; margin-top:10px;">Cancelar</button>
 </div>
 </div>
+
+<iframe id="outlookTrigger" style="display:none;"></iframe>
 
 <script type="module">
 
@@ -382,19 +384,22 @@ mercanciaDiv.classList.add("hidden");
 btnGenerar.disabled=true;
 });
 
-// FUNCIÓN SILENCIOSA: Solo intenta abrir Outlook App.
+// FUNCIÓN SILENCIOSA Y ROBUSTA
 window.abrirApp = function(){
     const to = window.destinatariosMailto;
     const subject = encodeURIComponent(window.asuntoActual);
     const body = encodeURIComponent(window.cuerpoActual);
 
-    // Protocolo exclusivo de Outlook (No dispara el selector de Gmail/Mail)
     const outlookUrl = `ms-outlook://compose?to=${to}&subject=${subject}&body=${body}`;
     
-    // Ejecución directa
-    window.location.href = outlookUrl;
+    // Usamos el iframe para disparar el protocolo sin refrescar ni mostrar errores de navegación
+    const iframe = document.getElementById("outlookTrigger");
+    if(iframe) {
+        iframe.src = outlookUrl;
+    } else {
+        window.location.href = outlookUrl;
+    }
 
-    // Cerramos el modal inmediatamente sin mostrar alertas de error
     cerrarModal();
 }
 
