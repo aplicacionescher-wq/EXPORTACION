@@ -237,7 +237,7 @@ Solicitud de Retornos Módulos
 <div class="modal-content">
 <h3>Confirmación de Envío</h3>
 <p style="font-size: 13px; color: #555; margin-bottom: 15px;">
-    Se requiere el uso de <strong>Outlook App</strong> con cuenta <strong>@anam.gob.mx</strong>.
+    Se enviará la solicitud mediante la aplicación oficial de <strong>Outlook</strong>.
 </p>
 <button onclick="abrirApp()">Abrir Outlook App</button>
 <button onclick="cerrarModal()" style="background:#666; margin-top:10px;">Cancelar</button>
@@ -382,41 +382,19 @@ mercanciaDiv.classList.add("hidden");
 btnGenerar.disabled=true;
 });
 
-// FUNCIÓN CORREGIDA PARA ANDROID (Detecta si la app abrió antes de mostrar error)
+// FUNCIÓN SILENCIOSA: Solo intenta abrir Outlook App.
 window.abrirApp = function(){
     const to = window.destinatariosMailto;
     const subject = encodeURIComponent(window.asuntoActual);
     const body = encodeURIComponent(window.cuerpoActual);
 
+    // Protocolo exclusivo de Outlook (No dispara el selector de Gmail/Mail)
     const outlookUrl = `ms-outlook://compose?to=${to}&subject=${subject}&body=${body}`;
-    const mailtoUrl = `mailto:${to}?subject=${subject}&body=${body}`;
     
-    // 1. Intentamos el protocolo directo de Outlook
+    // Ejecución directa
     window.location.href = outlookUrl;
 
-    // 2. Usamos una variable para rastrear si el usuario salió de la página
-    let paginaOculta = false;
-    const checkVisibility = () => { if(document.hidden) paginaOculta = true; };
-    window.addEventListener("visibilitychange", checkVisibility);
-
-    // 3. Esperamos 2.5 segundos para dar tiempo a Android/iOS de cambiar de app
-    setTimeout(() => {
-        window.removeEventListener("visibilitychange", checkVisibility);
-        
-        // Si la página NO se ocultó, significa que Outlook NO abrió
-        if (!paginaOculta) {
-            // Intentamos el mailto estándar por si Outlook es el predeterminado
-            window.location.href = mailtoUrl;
-            
-            // Si después de 1 segundo más sigue aquí, avisamos al usuario
-            setTimeout(() => {
-                if (!document.hidden) {
-                    alert("❌ ERROR: NO SE PUDO ABRIR OUTLOOK.\n\nVerifique que la App de Outlook esté instalada y configurada como su aplicación de correo predeterminada.");
-                }
-            }, 1500);
-        }
-    }, 2500);
-
+    // Cerramos el modal inmediatamente sin mostrar alertas de error
     cerrarModal();
 }
 
