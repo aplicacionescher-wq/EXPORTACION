@@ -40,7 +40,7 @@
 
         label { font-weight: bold; font-size: 14px; display: block; margin-top: 10px; }
         select, input, textarea { width: 100%; padding: 10px; margin: 6px 0 14px; border-radius: 6px; border: 1px solid #ccc; font-size: 14px; box-sizing: border-box; }
-        #placas { text-transform: uppercase; font-family: monospace; height: 100px; }
+        #placas { text-transform: uppercase; font-family: monospace; height: 80px; }
 
         .btn-main { background: #1E5B4F; color: #fff; padding: 14px; border: none; width: 100%; border-radius: 6px; font-size: 15px; cursor: pointer; font-weight: bold; margin-top: 6px; }
         .btn-main:disabled { background: #999; cursor: not-allowed; opacity: 0.6; }
@@ -51,9 +51,9 @@
         th, td { border: 1px solid #ccc; padding: 8px; font-size: 12px; text-align: center; }
         th { background: #611232; color: #fff; }
 
-        .modal { display: none; position: fixed; z-index: 999; inset: 0; background: rgba(0,0,0,0.75); justify-content: center; align-items: center; padding: 20px; }
+        .modal { display: none; position: fixed; z-index: 999; inset: 0; background: rgba(0,0,0,0.8); justify-content: center; align-items: center; padding: 20px; }
         .modal-content { background: #fff; padding: 25px; border-radius: 15px; width: 100%; max-width: 400px; text-align: center; }
-        .modal h2 { color: #611232; font-size: 22px; margin-bottom: 10px; }
+        .modal h2 { color: #611232; margin-top: 0; }
         .modal button { width: 100%; margin-top: 12px; padding: 16px; border: none; border-radius: 8px; font-weight: bold; cursor: pointer; font-size: 15px; }
         
         .btn-outlook { background: #0078D4; color: white; }
@@ -70,18 +70,16 @@
         <div class="logo-gota"><img src="logo-anam2.png" alt="ANAM"></div>
         <div class="title">Solicitud de Retornos Módulos</div>
 
-        <h3>Generador de Solicitudes</h3>
-        <p><strong>Folio:</strong> <span id="folio">--</span></p>
-        <p><strong>Fecha:</strong> <span id="fechaHora"></span></p>
-
         <form id="formRetorno">
+            <p><strong>Folio:</strong> <span id="folio">--</span> | <strong>Fecha:</strong> <span id="fechaHora"></span></p>
+
             <label>Tipo de Operación</label>
             <select id="operacion" required>
                 <option value="EXPORTACION" selected>EXPORTACION</option>
             </select>
 
-            <label>Operador</label>
-            <input type="text" id="operador" placeholder="Nombre completo" required>
+            <label>Operador de Módulos</label>
+            <input type="text" id="operador" placeholder="Tu nombre completo" required>
 
             <label>Tipo de Solicitud</label>
             <select id="tipo" required>
@@ -93,34 +91,30 @@
             </select>
 
             <label>Placas</label>
-            <textarea id="placas" placeholder="Introduce placas" required></textarea>
+            <textarea id="placas" placeholder="Ej: 12ABC34" required></textarea>
 
             <div id="mercanciaDiv" class="hidden">
                 <label>Descripción de la Mercancía</label>
-                <textarea id="mercancia" placeholder="Detalle la mercancía"></textarea>
+                <textarea id="mercancia" placeholder="Detalle de la carga sobredimensionada"></textarea>
             </div>
 
             <button type="submit" id="btnGenerar" class="btn-main" disabled>Generar y Enviar</button>
 
             <hr style="margin: 30px 0; border: 0; border-top: 1px solid #ddd;">
-
-            <label>Historial</label>
             <input type="date" id="fechaConsulta">
-            <button type="button" onclick="consultarPlacas()" class="btn-query">CONSULTAR PLACAS</button>
-            <button type="button" onclick="exportarExcel()" class="btn-query">EXPORTAR A EXCEL</button>
-
+            <button type="button" onclick="consultarPlacas()" class="btn-query">CONSULTAR REGISTROS</button>
+            <button type="button" onclick="exportarExcel()" class="btn-query">EXPORTAR EXCEL</button>
             <div id="tablaResultados" style="overflow-x:auto;"></div>
         </form>
     </div>
 
     <div id="modal" class="modal">
         <div class="modal-content">
-            <h2>Solicitud Generada</h2>
-            <p>Selecciona una opción para enviar:</p>
-            
-            <button class="btn-outlook" onclick="enviarOutlook()">ABRIR EN OUTLOOK</button>
-            <button class="btn-copy" onclick="copiarCuerpo()">COPIAR TEXTO (Manual)</button>
-            <button class="btn-close" onclick="cerrarModal()">CERRAR</button>
+            <h2>Folio Generado</h2>
+            <p>Selecciona cómo deseas abrir Outlook:</p>
+            <button class="btn-outlook" onclick="enviarOutlook()">ABRIR APP OUTLOOK</button>
+            <button class="btn-copy" onclick="copiarCuerpo()">COPIAR TEXTO Y ABRIR MANUAL</button>
+            <button class="btn-close" onclick="cerrarModal()">CANCELAR</button>
         </div>
     </div>
 
@@ -142,6 +136,8 @@
         const db = getDatabase(app);
 
         const form = document.getElementById("formRetorno");
+        const tipoSelect = document.getElementById("tipo");
+        const mercanciaDiv = document.getElementById("mercanciaDiv");
         const btnGenerar = document.getElementById("btnGenerar");
         
         window.datosEnvio = { to: "", sub: "", body: "" };
@@ -149,10 +145,14 @@
         const correosBase = ["juan.reyesg@anam.gob.mx","vyc.altamira@anam.gob.mx","alejandra.munoz@anam.gob.mx","jorge.silva@anam.gob.mx","abraham.gomez@anam.gob.mx","daniel.santosh@anam.gob.mx","christian.monrreal@anam.gob.mx","monica.becerra@anam.gob.mx","anahi.santiago@anam.gob.mx"];
         const correosExtra = ["emilio.garin@anam.gob.mx","sergio.diazr@anam.gob.mx","oscar.narro@anam.gob.mx"];
 
-        function actualizarReloj(){ document.getElementById("fechaHora").textContent = new Date().toLocaleString(); }
-        setInterval(actualizarReloj, 1000); actualizarReloj();
-
+        setInterval(() => { document.getElementById("fechaHora").textContent = new Date().toLocaleString(); }, 1000);
         form.addEventListener("input", () => { btnGenerar.disabled = !form.checkValidity(); });
+        
+        tipoSelect.addEventListener("change", () => {
+            const esRevision = (tipoSelect.value === "revision");
+            mercanciaDiv.classList.toggle("hidden", !esRevision);
+            document.getElementById("mercancia").required = esRevision;
+        });
 
         form.addEventListener("submit", async (e) => {
             e.preventDefault();
@@ -165,55 +165,72 @@
             const folioFinal = `RET-${idFecha}-${res.snapshot.val().toString().padStart(3, "0")}`;
             document.getElementById("folio").textContent = folioFinal;
 
+            const saludo = (hoy.getHours() < 12) ? "Buenos días" : (hoy.getHours() < 19) ? "Buenas tardes" : "Buenas noches";
             const op = document.getElementById("operacion").value;
             const placasVal = document.getElementById("placas").value;
             const operadorVal = document.getElementById("operador").value;
-            const tipoText = document.getElementById("tipo").options[document.getElementById("tipo").selectedIndex].text;
+            const mercaVal = document.getElementById("mercancia").value;
+            const tipoText = tipoSelect.options[tipoSelect.selectedIndex].text;
 
-            let cuerpo = "Buenas tardes,\n\n";
-            cuerpo += `Se solicita el apoyo para el vehículo con PLACAS: ${placasVal}\n`;
-            cuerpo += `Tipo de solicitud: ${tipoText}\n\n`;
-            cuerpo += `Saludos cordiales,\n${operadorVal}`;
+            // CUERPO DEL CORREO COMPLETO
+            let cuerpo = saludo + ",\n\n";
+            if(tipoSelect.value === "revision"){
+                cuerpo += "Por medio del presente, se solicita el valioso apoyo de la Subdirección de Vigilancia y Control para realizar la apertura del carril de excesos de exportación. Lo anterior, con la finalidad de permitir el ingreso y posicionamiento de la unidad con exceso de dimensiones en la explanada de vacíos.\n\n" +
+                          "Se les solicita de la manera más atenta confirmar en cuanto la unidad se encuentre debidamente posicionada.\n\n" +
+                          "PLACAS: " + placasVal + "\n" +
+                          "MERCANCÍA: " + mercaVal + "\n\n" +
+                          "Posteriormente, la unidad será inspeccionada por el equipo ZBV del Departamento de Equipos No Intrusivos en la explanada de vacíos de importación.\n\n" +
+                          "De igual forma, se solicita dar aviso al personal del módulo una vez que la unidad haya sido revisada, así como responder a este correo electrónico al concluir la inspección.\n\n" +
+                          "Sin más por el momento, quedo atento a sus comentarios.\n\n" +
+                          "Gracias.\n\nSaludos cordiales,\n" + operadorVal + "\nMódulos ANAM Altamira";
+            } else {
+                const area = (op === "EXPORTACION") ? "del carril de excesos a la exportación" : "de la Puerta Caracol";
+                cuerpo += "El presente correo es para solicitar la apertura " + area + " para el retorno al vehículo con las placas siguientes:\n\n" +
+                          "PLACAS: " + placasVal + "\n" +
+                          "TIPO DE RETORNO: " + tipoText + "\n\n" +
+                          "Gracias.\n\nSaludos cordiales,\n" + operadorVal + "\nMódulos ANAM Altamira";
+            }
 
-            await push(ref(db, "retornos"), { folio: folioFinal, fecha: hoy.toISOString(), operador: operadorVal, placas: placasVal });
+            await push(ref(db, "retornos"), { folio: folioFinal, fecha: hoy.toISOString(), operador: operadorVal, placas: placasVal, tipo: tipoSelect.value });
 
-            window.datosEnvio.to = (document.getElementById("tipo").value === "revision") ? correosBase.concat(correosExtra).join(",") : correosBase.join(",");
+            window.datosEnvio.to = (tipoSelect.value === "revision") ? correosBase.concat(correosExtra).join(",") : correosBase.join(",");
             window.datosEnvio.sub = `${op} - ${tipoText}`;
             window.datosEnvio.body = cuerpo;
 
             document.getElementById("modal").style.display = "flex";
-            btnGenerar.disabled = false;
         });
 
-        /* === FUNCIÓN OUTLOOK CORREGIDA === */
         window.enviarOutlook = function() {
             const { to, sub, body } = window.datosEnvio;
-            
-            // 1. Intentamos el esquema de la App directamente
-            const appUrl = `ms-outlook://compose?to=${to}&subject=${encodeURIComponent(sub)}&body=${encodeURIComponent(body)}`;
-            
-            // 2. Definimos la URL web de Office 365 (esto es lo que abre si la app falla)
-            const webUrl = `https://outlook.office.com/mail/deeplink/compose?to=${encodeURIComponent(to)}&subject=${encodeURIComponent(sub)}&body=${encodeURIComponent(body)}`;
+            // Codificamos dos veces para asegurar que los saltos de línea (\n) sobrevivan en móviles
+            const mailtoUrl = `mailto:${to}?subject=${encodeURIComponent(sub)}&body=${encodeURIComponent(body)}`;
+            const officeUrl = `https://outlook.office.com/mail/deeplink/compose?to=${encodeURIComponent(to)}&subject=${encodeURIComponent(sub)}&body=${encodeURIComponent(body)}`;
 
-            // Intentamos abrir la app
-            window.location.href = appUrl;
+            // Intentamos mailto (abre app predeterminada)
+            window.location.href = mailtoUrl;
 
-            // Si en 1 segundo no se ha cerrado la pestaña (el usuario sigue aquí),
-            // significa que la app no abrió o el enlace falló, entonces saltamos a la web.
-            setTimeout(() => {
-                if (!document.hidden) {
-                    window.location.href = webUrl;
-                }
-            }, 1000);
+            // Si no cambia de pantalla en 1 segundo, forzamos la ruta de Office Web
+            setTimeout(() => { if (!document.hidden) window.location.href = officeUrl; }, 1000);
         };
 
         window.copiarCuerpo = function() {
-            navigator.clipboard.writeText(window.datosEnvio.body);
-            alert("Copiado al portapapeles");
+            navigator.clipboard.writeText(window.datosEnvio.body).then(() => {
+                alert("Texto copiado. Se abrirá Outlook, pega el texto en el cuerpo.");
+                window.location.href = "https://outlook.office.com/mail/deeplink/compose";
+            });
         };
 
-        window.cerrarModal = function() {
-            document.getElementById("modal").style.display = "none";
+        window.cerrarModal = function() { document.getElementById("modal").style.display = "none"; btnGenerar.disabled = false; };
+        
+        window.consultarPlacas = async function(){
+            const snap = await get(ref(db, "retornos"));
+            const fecha = document.getElementById("fechaConsulta").value;
+            let html = "<table><tr><th>Operador</th><th>Placas</th></tr>";
+            snap.forEach(d => {
+                const v = d.val();
+                if(v.fecha.startsWith(fecha)) html += `<tr><td>${v.operador}</td><td>${v.placas}</td></tr>`;
+            });
+            document.getElementById("tablaResultados").innerHTML = html + "</table>";
         };
     </script>
 </body>
