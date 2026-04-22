@@ -51,14 +51,17 @@
         th, td { border: 1px solid #ccc; padding: 8px; font-size: 12px; text-align: center; }
         th { background: #611232; color: #fff; }
 
-        .modal { display: none; position: fixed; z-index: 999; inset: 0; background: rgba(0,0,0,0.8); justify-content: center; align-items: center; padding: 20px; }
+        .modal { display: none; position: fixed; z-index: 999; inset: 0; background: rgba(0,0,0,0.85); justify-content: center; align-items: center; padding: 20px; }
         .modal-content { background: #fff; padding: 25px; border-radius: 15px; width: 100%; max-width: 400px; text-align: center; }
-        .modal h2 { color: #611232; margin-top: 0; }
-        .modal button { width: 100%; margin-top: 12px; padding: 16px; border: none; border-radius: 8px; font-weight: bold; cursor: pointer; font-size: 15px; }
+        .modal h2 { color: #611232; margin-top: 0; font-size: 20px; }
         
-        .btn-outlook { background: #0078D4; color: white; }
-        .btn-copy { background: #A57F2C; color: white; }
-        .btn-close { background: #f0f0f0; color: #333; }
+        /* El enlace disfrazado de botón es la clave */
+        .link-button { 
+            display: block; text-decoration: none; background: #0078D4; color: white; 
+            padding: 16px; border-radius: 8px; font-weight: bold; margin-top: 12px; font-size: 15px;
+        }
+        .btn-copy { background: #A57F2C; color: white; width: 100%; padding: 16px; border: none; border-radius: 8px; font-weight: bold; margin-top: 12px; cursor: pointer; }
+        .btn-close { background: #f0f0f0; color: #333; width: 100%; padding: 12px; border: none; border-radius: 8px; margin-top: 12px; cursor: pointer; }
     </style>
 </head>
 
@@ -98,7 +101,7 @@
                 <textarea id="mercancia" placeholder="Detalle de la carga sobredimensionada"></textarea>
             </div>
 
-            <button type="submit" id="btnGenerar" class="btn-main" disabled>Generar y Enviar</button>
+            <button type="submit" id="btnGenerar" class="btn-main" disabled>Generar Folio</button>
 
             <hr style="margin: 30px 0; border: 0; border-top: 1px solid #ddd;">
             <input type="date" id="fechaConsulta">
@@ -110,11 +113,13 @@
 
     <div id="modal" class="modal">
         <div class="modal-content">
-            <h2>Folio Generado</h2>
-            <p>Selecciona cómo deseas abrir Outlook:</p>
-            <button class="btn-outlook" onclick="enviarOutlook()">ABRIR APP OUTLOOK</button>
-            <button class="btn-copy" onclick="copiarCuerpo()">COPIAR TEXTO Y ABRIR MANUAL</button>
-            <button class="btn-close" onclick="cerrarModal()">CANCELAR</button>
+            <h2 id="modalTitle">Folio Generado</h2>
+            <p>El folio se guardó en el sistema. Toca el botón azul para abrir Outlook:</p>
+            
+            <a id="btnOutlookReal" class="link-button" href="#">ABRIR EN OUTLOOK</a>
+            
+            <button class="btn-copy" onclick="copiarCuerpo()">COPIAR TEXTO (Manual)</button>
+            <button class="btn-close" onclick="cerrarModal()">CERRAR</button>
         </div>
     </div>
 
@@ -140,10 +145,10 @@
         const mercanciaDiv = document.getElementById("mercanciaDiv");
         const btnGenerar = document.getElementById("btnGenerar");
         
-        window.datosEnvio = { to: "", sub: "", body: "" };
+        window.cuerpoActual = "";
 
-        const correosBase = ["juan.reyesg@anam.gob.mx","vyc.altamira@anam.gob.mx","alejandra.munoz@anam.gob.mx","jorge.silva@anam.gob.mx","abraham.gomez@anam.gob.mx","daniel.santosh@anam.gob.mx","christian.monrreal@anam.gob.mx","monica.becerra@anam.gob.mx","anahi.santiago@anam.gob.mx"];
-        const correosExtra = ["emilio.garin@anam.gob.mx","sergio.diazr@anam.gob.mx","oscar.narro@anam.gob.mx"];
+        const correosBase = "juan.reyesg@anam.gob.mx,vyc.altamira@anam.gob.mx,alejandra.munoz@anam.gob.mx,jorge.silva@anam.gob.mx,abraham.gomez@anam.gob.mx,daniel.santosh@anam.gob.mx,christian.monrreal@anam.gob.mx,monica.becerra@anam.gob.mx,anahi.santiago@anam.gob.mx";
+        const correosExtra = ",emilio.garin@anam.gob.mx,sergio.diazr@anam.gob.mx,oscar.narro@anam.gob.mx";
 
         setInterval(() => { document.getElementById("fechaHora").textContent = new Date().toLocaleString(); }, 1000);
         form.addEventListener("input", () => { btnGenerar.disabled = !form.checkValidity(); });
@@ -172,7 +177,6 @@
             const mercaVal = document.getElementById("mercancia").value;
             const tipoText = tipoSelect.options[tipoSelect.selectedIndex].text;
 
-            // CUERPO DEL CORREO COMPLETO
             let cuerpo = saludo + ",\n\n";
             if(tipoSelect.value === "revision"){
                 cuerpo += "Por medio del presente, se solicita el valioso apoyo de la Subdirección de Vigilancia y Control para realizar la apertura del carril de excesos de exportación. Lo anterior, con la finalidad de permitir el ingreso y posicionamiento de la unidad con exceso de dimensiones en la explanada de vacíos.\n\n" +
@@ -191,37 +195,38 @@
                           "Gracias.\n\nSaludos cordiales,\n" + operadorVal + "\nMódulos ANAM Altamira";
             }
 
+            window.cuerpoActual = cuerpo;
             await push(ref(db, "retornos"), { folio: folioFinal, fecha: hoy.toISOString(), operador: operadorVal, placas: placasVal, tipo: tipoSelect.value });
 
-            window.datosEnvio.to = (tipoSelect.value === "revision") ? correosBase.concat(correosExtra).join(",") : correosBase.join(",");
-            window.datosEnvio.sub = `${op} - ${tipoText}`;
-            window.datosEnvio.body = cuerpo;
+            // CONFIGURACIÓN DEL ENLACE DE OUTLOOK
+            const to = (tipoSelect.value === "revision") ? correosBase + correosExtra : correosBase;
+            const subject = `${op} - ${tipoText}`;
+            
+            // mailto es el estándar que entiende la App instalada de Outlook en iPhone y Android
+            const mailtoUrl = `mailto:${to}?subject=${encodeURIComponent(subject)}&body=${encodeURIComponent(cuerpo)}`;
+            
+            // Actualizamos el botón del modal con este enlace
+            const btnOutlook = document.getElementById("btnOutlookReal");
+            btnOutlook.href = mailtoUrl;
 
+            document.getElementById("modalTitle").textContent = "Folio: " + folioFinal;
             document.getElementById("modal").style.display = "flex";
         });
 
-        window.enviarOutlook = function() {
-            const { to, sub, body } = window.datosEnvio;
-            // Codificamos dos veces para asegurar que los saltos de línea (\n) sobrevivan en móviles
-            const mailtoUrl = `mailto:${to}?subject=${encodeURIComponent(sub)}&body=${encodeURIComponent(body)}`;
-            const officeUrl = `https://outlook.office.com/mail/deeplink/compose?to=${encodeURIComponent(to)}&subject=${encodeURIComponent(sub)}&body=${encodeURIComponent(body)}`;
-
-            // Intentamos mailto (abre app predeterminada)
-            window.location.href = mailtoUrl;
-
-            // Si no cambia de pantalla en 1 segundo, forzamos la ruta de Office Web
-            setTimeout(() => { if (!document.hidden) window.location.href = officeUrl; }, 1000);
-        };
-
         window.copiarCuerpo = function() {
-            navigator.clipboard.writeText(window.datosEnvio.body).then(() => {
-                alert("Texto copiado. Se abrirá Outlook, pega el texto en el cuerpo.");
-                window.location.href = "https://outlook.office.com/mail/deeplink/compose";
+            navigator.clipboard.writeText(window.cuerpoActual).then(() => {
+                alert("Cuerpo del correo copiado. Si la app no abre sola, pégalo manualmente.");
             });
         };
 
-        window.cerrarModal = function() { document.getElementById("modal").style.display = "none"; btnGenerar.disabled = false; };
-        
+        window.cerrarModal = function() {
+            document.getElementById("modal").style.display = "none";
+            form.reset();
+            document.getElementById("folio").textContent = "--";
+            mercanciaDiv.classList.add("hidden");
+            btnGenerar.disabled = true;
+        };
+
         window.consultarPlacas = async function(){
             const snap = await get(ref(db, "retornos"));
             const fecha = document.getElementById("fechaConsulta").value;
@@ -231,6 +236,15 @@
                 if(v.fecha.startsWith(fecha)) html += `<tr><td>${v.operador}</td><td>${v.placas}</td></tr>`;
             });
             document.getElementById("tablaResultados").innerHTML = html + "</table>";
+        };
+
+        window.exportarExcel = async function(){
+            const snap = await get(ref(db, "retornos"));
+            let data = []; snap.forEach(d => data.push(d.val()));
+            const ws = XLSX.utils.json_to_sheet(data);
+            const wb = XLSX.utils.book_new();
+            XLSX.utils.book_append_sheet(wb, ws, "Registros");
+            XLSX.writeFile(wb, "Reporte_ANAM.xlsx");
         };
     </script>
 </body>
