@@ -213,10 +213,36 @@
             },1000);
         });
 
-        window.abrirOutlook=function(){
-            window.location.href=outlookUrlGlobal;
-            setTimeout(()=>{ window.location.href=mailtoGlobal; },1500);
-        }
+      //  window.abrirOutlook=function(){
+      //      window.location.href=outlookUrlGlobal;
+      //      setTimeout(()=>{ window.location.href=mailtoGlobal; },1500);
+      //  }
+
+        window.abrirOutlook = function () {
+
+    const isIOS = /iPhone|iPad|iPod/i.test(navigator.userAgent);
+
+    if (isIOS) {
+        // En iOS usar iframe invisible (evita error de Safari)
+        const iframe = document.createElement("iframe");
+        iframe.style.display = "none";
+        iframe.src = outlookUrlGlobal;
+        document.body.appendChild(iframe);
+
+        // Fallback seguro
+        setTimeout(() => {
+            window.location.href = mailtoGlobal;
+        }, 1500);
+
+    } else {
+        // Android normal
+        window.location.href = outlookUrlGlobal;
+
+        setTimeout(() => {
+            window.location.href = mailtoGlobal;
+        }, 1500);
+    }
+};
 
         window.copiarCorreo=function(){
             navigator.clipboard.writeText(cuerpoGlobal);
