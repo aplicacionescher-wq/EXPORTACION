@@ -126,7 +126,7 @@
             <button class="btn-outlook" onclick="abrirOutlook()">Abrir en Outlook</button>
             <button class="btn-mail" onclick="abrirCorreoNormal()">Abrir correo normal</button>
             <button class="btn-copy" onclick="copiarCorreo()">Copiar correo</button>
-            <button class="btn-close" onclick="cerrarModal()">Cancelar</button>
+            <button class="btn-close" onclick="cerrarModal()">Cerrar</button>
         </div>
     </div>
 
@@ -240,9 +240,7 @@ window.abrirOutlook = function(){
    window.location.href = mailtoGlobal;
  }
 };
-
-      
-      
+           
         window.abrirCorreoNormal=function(){ window.location.href=mailtoGlobal; }
 
         window.copiarCorreo=function(){
@@ -284,35 +282,3 @@ window.abrirCorreoNormal = function(){
     </script>
 </body>
 </html>
-
-
-
-
-/* ===== ACCIONES ===== */
-//window.abrirOutlook = function(){
-//  const isApp = !!window.Capacitor;
-//  if(isApp){
-//    window.open(outlookUrlGlobal, "_system");
-//  }else{
-    // En navegador, no forzar esquema → usar mailto
- //   window.location.href = mailtoGlobal;
-//  }
-//};
-
-/window.abrirCorreoNormal = function(){
- / window.location.href = mailtoGlobal;
-/};
-
-/window.copiarCorreo = async function(){
-/  try{
-/    await navigator.clipboard.writeText(cuerpoGlobal);
-/    alert("Correo copiado");
-/  }catch(e){
-/    alert("No se pudo copiar");
-/  }
-/};
-
-/window.cerrarModal = function(){
-/  document.getElementById("modal").style.display="none";
-/};
-
