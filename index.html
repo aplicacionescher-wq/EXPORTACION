@@ -20,6 +20,7 @@
             border-top: 8px solid #1E5B4F; overflow: hidden;
         }
 
+        /* Marca de agua de fondo */
         .container::before {
             content: ""; position: absolute; inset: 0;
             background: url("logo-anam.png") center center no-repeat;
@@ -40,7 +41,7 @@
 
         label { font-weight: bold; font-size: 14px; display: block; margin-top: 10px; }
         select, input, textarea { width: 100%; padding: 10px; margin: 6px 0 14px; border-radius: 6px; border: 1px solid #ccc; font-size: 14px; box-sizing: border-box; }
-        #placas { text-transform: uppercase; font-family: monospace; }
+        #placas { text-transform: uppercase; font-family: monospace; height: 80px; }
 
         .btn-main { background: #1E5B4F; color: #fff; padding: 14px; border: none; width: 100%; border-radius: 6px; font-size: 15px; cursor: pointer; font-weight: bold; margin-top: 6px; }
         .btn-main:disabled { background: #999; cursor: not-allowed; opacity: 0.6; }
@@ -52,15 +53,16 @@
         th { background: #611232; color: #fff; }
         .footer { text-align: center; font-size: 11px; color: #98989A; margin: 20px 0; }
 
-        .modal { display: none; position: fixed; z-index: 999; inset: 0; background: rgba(0,0,0,0.6); justify-content: center; align-items: center; }
-        .modal-content { background: #fff; padding: 25px; border-radius: 12px; width: 90%; max-width: 420px; text-align: center; box-shadow: 0 10px 25px rgba(0,0,0,0.2); }
-        .modal h2 { color: #611232; margin-bottom: 10px; }
-        .modal p { font-size: 14px; color: #555; }
-        .modal button { width: 100%; margin-top: 10px; padding: 12px; border: none; border-radius: 6px; font-weight: bold; cursor: pointer; }
+        /* Estilos del Modal */
+        .modal { display: none; position: fixed; z-index: 999; inset: 0; background: rgba(0,0,0,0.6); justify-content: center; align-items: center; padding: 20px; }
+        .modal-content { background: #fff; padding: 25px; border-radius: 12px; width: 100%; max-width: 400px; text-align: center; box-shadow: 0 10px 25px rgba(0,0,0,0.2); }
+        .modal h2 { color: #611232; margin-top: 0; }
+        .modal button { width: 100%; margin-top: 10px; padding: 12px; border: none; border-radius: 6px; font-weight: bold; cursor: pointer; font-size: 14px; }
+        
         .btn-outlook { background: #0078D4; color: white; }
         .btn-mail { background: #1E5B4F; color: white; }
         .btn-copy { background: #A57F2C; color: white; }
-        .btn-close { background: #ccc; }
+        .btn-close { background: #ccc; color: #333; }
     </style>
 </head>
 
@@ -79,7 +81,7 @@
         <form id="formRetorno">
             <label>Tipo de Operación</label>
             <select id="operacion" required>
-                <option selected>EXPORTACION</option>
+                <option value="EXPORTACION" selected>EXPORTACION</option>
             </select>
 
             <label>Operador</label>
@@ -111,7 +113,7 @@
             <button type="button" onclick="consultarPlacas()" class="btn-query">CONSULTAR PLACAS</button>
             <button type="button" onclick="exportarExcel()" class="btn-query">EXPORTAR A EXCEL</button>
 
-            <div id="tablaResultados"></div>
+            <div id="tablaResultados" style="overflow-x:auto;"></div>
         </form>
     </div>
 
@@ -119,12 +121,12 @@
 
     <div id="modal" class="modal">
         <div class="modal-content">
-            <h2>Enviar correo</h2>
-            <p>Selecciona la opción para abrir Outlook</p>
+            <h2>Acción requerida</h2>
+            <p>Selecciona el método para enviar el correo:</p>
             <button class="btn-outlook" onclick="abrirOutlook()">Abrir en Outlook (App)</button>
-            <button class="btn-mail" onclick="abrirCorreoNormal()">Abrir correo predeterminado</button>
-            <button class="btn-copy" onclick="copiarCorreo()">Copiar texto del cuerpo</button>
-            <button class="btn-close" onclick="cerrarModal()">Cerrar</button>
+            <button class="btn-mail" onclick="abrirCorreoNormal()">Correo Predeterminado</button>
+            <button class="btn-copy" onclick="copiarCorreo()">Copiar Texto</button>
+            <button class="btn-close" onclick="cerrarModal()">Cancelar</button>
         </div>
     </div>
 
@@ -132,6 +134,7 @@
         import { initializeApp } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-app.js";
         import { getDatabase, ref, push, runTransaction, get } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-database.js";
 
+        // Configuración Firebase
         const firebaseConfig = {
             apiKey: "TU_API_KEY",
             authDomain: "retornos-anam-altamira.firebaseapp.com",
@@ -150,135 +153,151 @@
         const mercanciaDiv = document.getElementById("mercanciaDiv");
         const btnGenerar = document.getElementById("btnGenerar");
 
+        // Variables Globales para envío
+        window.correosGlobal = "";
+        window.subjectGlobal = "";
+        window.cuerpoGlobal = "";
+        window.mailtoGlobal = "";
+
         const correosBase = ["juan.reyesg@anam.gob.mx","vyc.altamira@anam.gob.mx","alejandra.munoz@anam.gob.mx","jorge.silva@anam.gob.mx","abraham.gomez@anam.gob.mx","daniel.santosh@anam.gob.mx","christian.monrreal@anam.gob.mx","monica.becerra@anam.gob.mx","anahi.santiago@anam.gob.mx"];
         const correosExtra = ["emilio.garin@anam.gob.mx","sergio.diazr@anam.gob.mx","oscar.narro@anam.gob.mx"];
 
-        let correosGlobal = "";
-        let subjectGlobal = "";
-        let cuerpoGlobal = "";
-        let mailtoGlobal = "";
+        // Reloj
+        function actualizarReloj(){ document.getElementById("fechaHora").textContent = new Date().toLocaleString(); }
+        setInterval(actualizarReloj, 1000); actualizarReloj();
+        document.getElementById("fechaConsulta").value = new Date().toISOString().split("T")[0];
 
-        function actualizarReloj(){ document.getElementById("fechaHora").textContent=new Date().toLocaleString(); }
-        setInterval(actualizarReloj,1000); actualizarReloj();
-        document.getElementById("fechaConsulta").value=new Date().toISOString().split("T")[0];
-
-        form.addEventListener("input",()=>{ btnGenerar.disabled=!form.checkValidity(); });
-        tipo.addEventListener("change",()=>{
-            const esRevision=(tipo.value==="revision");
-            mercanciaDiv.classList.toggle("hidden",!esRevision);
-            document.getElementById("mercancia").required=esRevision;
+        // Validar formulario
+        form.addEventListener("input", () => { btnGenerar.disabled = !form.checkValidity(); });
+        
+        tipo.addEventListener("change", () => {
+            const esRevision = (tipo.value === "revision");
+            mercanciaDiv.classList.toggle("hidden", !esRevision);
+            document.getElementById("mercancia").required = esRevision;
         });
 
-        form.addEventListener("submit", async (e)=>{
+        // Proceso de Envío
+        form.addEventListener("submit", async (e) => {
             e.preventDefault();
-            btnGenerar.disabled=true;
+            btnGenerar.disabled = true;
 
-            const hoy=new Date();
-            const idFecha=hoy.getFullYear()+("0"+(hoy.getMonth()+1)).slice(-2)+("0"+hoy.getDate()).slice(-2);
-            const refCont=ref(db,'contadorFolios/'+idFecha);
-            const res=await runTransaction(refCont,(c)=>(c||0)+1);
-            const folioFinal=`RET-${idFecha}-${res.snapshot.val().toString().padStart(3,"0")}`;
-            document.getElementById("folio").textContent=folioFinal;
+            const hoy = new Date();
+            const idFecha = hoy.getFullYear() + ("0" + (hoy.getMonth() + 1)).slice(-2) + ("0" + hoy.getDate()).slice(-2);
+            
+            // Transacción de Folio
+            const refCont = ref(db, 'contadorFolios/' + idFecha);
+            const res = await runTransaction(refCont, (c) => (c || 0) + 1);
+            const folioFinal = `RET-${idFecha}-${res.snapshot.val().toString().padStart(3, "0")}`;
+            document.getElementById("folio").textContent = folioFinal;
 
-            const saludo=(hoy.getHours()<12)?"Buenos días":(hoy.getHours()<19)?"Buenas tardes":"Buenas noches";
-            const op=document.getElementById("operacion").value;
-            const placasVal=document.getElementById("placas").value;
-            const operadorVal=document.getElementById("operador").value;
-            const mercaVal=document.getElementById("mercancia").value;
+            const saludo = (hoy.getHours() < 12) ? "Buenos días" : (hoy.getHours() < 19) ? "Buenas tardes" : "Buenas noches";
+            const op = document.getElementById("operacion").value;
+            const placasVal = document.getElementById("placas").value;
+            const operadorVal = document.getElementById("operador").value;
+            const mercaVal = document.getElementById("mercancia").value;
 
-            let cuerpo=saludo+",\n\n";
-            if(tipo.value==="revision"){
-                cuerpo+="Por medio del presente, se solicita el valioso apoyo de la Subdirección de Vigilancia y Control para realizar la apertura del carril de excesos de exportación. Lo anterior, con la finalidad de permitir el ingreso y posicionamiento de la unidad con exceso de dimensiones en la explanada de vacíos.\n\nSe les solicita de la manera más atenta confirmar en cuanto la unidad se encuentre debidamente posicionada.\n\nPLACAS:\n"+placasVal+"\n\nMERCANCÍA:\n"+mercaVal+"\n\nPosteriormente, la unidad será inspeccionada por el equipo ZBV del Departamento de Equipos No Intrusivos en la explanada de vacíos de importación.\n\nDe igual forma, se solicita dar aviso al personal del módulo una vez que la unidad haya sido revisada, así como responder a este correo electrónico al concluir la inspección.\n\nSin más por el momento, quedo atento a sus comentarios.\n\nGracias.\n\nSaludos cordiales,\n"+operadorVal+"\nMódulos\nANAM Altamira";
+            // Construcción del Cuerpo
+            let cuerpo = saludo + ",\n\n";
+            if(tipo.value === "revision"){
+                cuerpo += "Por medio del presente, se solicita el valioso apoyo de la Subdirección de Vigilancia y Control para realizar la apertura del carril de excesos de exportación. Lo anterior, con la finalidad de permitir el ingreso y posicionamiento de la unidad con exceso de dimensiones en la explanada de vacíos.\n\nSe les solicita de la manera más atenta confirmar en cuanto la unidad se encuentre debidamente posicionada.\n\nPLACAS:\n" + placasVal + "\n\nMERCANCÍA:\n" + mercaVal + "\n\nPosteriormente, la unidad será inspeccionada por el equipo ZBV del Departamento de Equipos No Intrusivos en la explanada de vacíos de importación.\n\nDe igual forma, se solicita dar aviso al personal del módulo una vez que la unidad haya sido revisada, así como responder a este correo electrónico al concluir la inspección.\n\nSin más por el momento, quedo atento a sus comentarios.\n\nGracias.\n\nSaludos cordiales,\n" + operadorVal + "\nMódulos\nANAM Altamira";
             } else {
-                const area=(op==="EXPORTACION")?"del carril de excesos a la exportación":"de la Puerta Caracol";
-                cuerpo+="El presente correo es para solicitar la apertura "+area+" para el retorno al vehículo con las placas siguientes:\n\nPLACAS:\n"+placasVal+"\n\nTipo de retorno:\n"+tipo.options[tipo.selectedIndex].text+"\n\nGracias.\n\nSaludos cordiales,\n"+operadorVal+"\nMódulos\nANAM Altamira";
+                const area = (op === "EXPORTACION") ? "del carril de excesos a la exportación" : "de la Puerta Caracol";
+                cuerpo += "El presente correo es para solicitar la apertura " + area + " para el retorno al vehículo con las placas siguientes:\n\nPLACAS:\n" + placasVal + "\n\nTipo de retorno:\n" + tipo.options[tipo.selectedIndex].text + "\n\nGracias.\n\nSaludos cordiales,\n" + operadorVal + "\nMódulos\nANAM Altamira";
             }
 
-            await push(ref(db,"retornos"),{folio:folioFinal,fecha:hoy.toISOString(),operador:operadorVal,placas:placasVal,tipo:tipo.value});
+            // Guardar en Firebase
+            await push(ref(db, "retornos"), { folio: folioFinal, fecha: hoy.toISOString(), operador: operadorVal, placas: placasVal, tipo: tipo.value });
 
-            const to=(tipo.value==="revision")?correosBase.concat(correosExtra).join(","):correosBase.join(",");
-            const subject=`${op} - ${tipo.options[tipo.selectedIndex].text}`;
+            // Preparar variables de envío
+            const to = (tipo.value === "revision") ? correosBase.concat(correosExtra).join(",") : correosBase.join(",");
+            const subject = `${op} - ${tipo.options[tipo.selectedIndex].text}`;
             
-            correosGlobal = to;
-            subjectGlobal = subject;
-            cuerpoGlobal = cuerpo;
-            
-            mailtoGlobal = `mailto:${to}?subject=${encodeURIComponent(subject)}&body=${encodeURIComponent(cuerpo)}`;
+            window.correosGlobal = to;
+            window.subjectGlobal = subject;
+            window.cuerpoGlobal = cuerpo;
+            window.mailtoGlobal = `mailto:${to}?subject=${encodeURIComponent(subject)}&body=${encodeURIComponent(cuerpo)}`;
 
-            document.getElementById("modal").style.display="flex";
+            // Mostrar Modal
+            document.getElementById("modal").style.display = "flex";
 
-            setTimeout(()=>{
+            // Limpiar Formulario tras breve pausa
+            setTimeout(() => {
                 form.reset();
-                document.getElementById("folio").textContent="--";
+                document.getElementById("folio").textContent = "--";
                 mercanciaDiv.classList.add("hidden");
-                btnGenerar.disabled=true;
-            },1000);
+                btnGenerar.disabled = true;
+            }, 1500);
         });
 
-        /* ===== LÓGICA DE APERTURA PARA MÓVILES (OUTLOOK) ===== */
+        /* === FUNCIONES DE SALIDA (ASIGNADAS A WINDOW PARA EL MODAL) === */
 
         window.abrirOutlook = function() {
-            const to = correosGlobal;
-            const sub = encodeURIComponent(subjectGlobal);
-            const body = encodeURIComponent(cuerpoGlobal);
+            const to = window.correosGlobal;
+            const sub = encodeURIComponent(window.subjectGlobal);
+            const body = encodeURIComponent(window.cuerpoGlobal);
 
             const isIOS = /iPhone|iPad|iPod/i.test(navigator.userAgent);
             const isAndroid = /Android/i.test(navigator.userAgent);
 
             if (isAndroid) {
-                // Formato "Intent" oficial para Android (Chrome)
-                // Esto fuerza al sistema a buscar la app com.microsoft.office.outlook
-                const intentUrl = `intent://compose?to=${to}&subject=${sub}&body=${body}#Intent;scheme=ms-outlook;package=com.microsoft.office.outlook;end`;
-                window.location.href = intentUrl;
+                // Comando Android Intent: Fuerza a abrir la APP si está instalada.
+                const androidIntent = `intent://compose?to=${to}&subject=${sub}&body=${body}#Intent;scheme=ms-outlook;package=com.microsoft.office.outlook;end`;
+                window.location.href = androidIntent;
             } 
             else if (isIOS) {
-                // En iOS/iPhone el esquema ms-outlook:// debe abrirse como una nueva ventana
-                // para que Safari no bloquee la redirección
-                const outlookUrl = `ms-outlook://compose?to=${to}&subject=${sub}&body=${body}`;
-                window.open(outlookUrl, '_blank');
+                // Universal Link de Office + Esquema ms-outlook
+                // Intentamos abrir la app directamente, si falla, va al link de Outlook Web que iPhone reconoce.
+                const outlookWeb = `https://outlook.office.com/mail/deeplink/compose?to=${to}&subject=${sub}&body=${body}`;
+                const outlookApp = `ms-outlook://compose?to=${to}&subject=${sub}&body=${body}`;
                 
-                // Fallback por si la App no está instalada
+                // Intento con <a> invisible para saltar bloqueos
+                const a = document.createElement('a');
+                a.href = outlookApp;
+                document.body.appendChild(a);
+                a.click();
+                
                 setTimeout(() => {
-                    window.location.href = mailtoGlobal;
-                }, 1500);
+                    if (document.hasFocus()) { window.location.href = outlookWeb; }
+                }, 800);
             } 
             else {
-                // Computadora
-                window.location.href = mailtoGlobal;
+                // PC / Escritorio
+                window.location.href = window.mailtoGlobal;
             }
         };
 
         window.abrirCorreoNormal = function() {
-            window.location.href = mailtoGlobal;
+            window.location.href = window.mailtoGlobal;
         };
 
         window.copiarCorreo = function() {
-            navigator.clipboard.writeText(cuerpoGlobal);
-            alert("Cuerpo del correo copiado.");
+            navigator.clipboard.writeText(window.cuerpoGlobal);
+            alert("Texto copiado al portapapeles. Ya puedes pegarlo en Outlook.");
         };
 
         window.cerrarModal = function() {
             document.getElementById("modal").style.display = "none";
         };
 
-        window.consultarPlacas=async function(){
-            const snap=await get(ref(db,"retornos"));
-            const fecha=document.getElementById("fechaConsulta").value;
-            let html="<table><tr><th>Operador</th><th>Placas</th></tr>";
-            snap.forEach(d=>{
-                const v=d.val();
-                if(v.fecha.startsWith(fecha)) html+=`<tr><td>${v.operador}</td><td>${v.placas}</td></tr>`;
+        // Historial y Consultas
+        window.consultarPlacas = async function(){
+            const snap = await get(ref(db, "retornos"));
+            const fecha = document.getElementById("fechaConsulta").value;
+            let html = "<table><tr><th>Operador</th><th>Placas</th></tr>";
+            snap.forEach(d => {
+                const v = d.val();
+                if(v.fecha.startsWith(fecha)) html += `<tr><td>${v.operador}</td><td>${v.placas}</td></tr>`;
             });
-            document.getElementById("tablaResultados").innerHTML=html+"</table>";
+            document.getElementById("tablaResultados").innerHTML = html + "</table>";
         }
 
-        window.exportarExcel=async function(){
-            const snap=await get(ref(db,"retornos"));
-            let data=[]; snap.forEach(d=>data.push(d.val()));
-            const ws=XLSX.utils.json_to_sheet(data);
-            const wb=XLSX.utils.book_new();
-            XLSX.utils.book_append_sheet(wb,ws,"Registros");
-            XLSX.writeFile(wb,"Reporte_ANAM.xlsx");
+        window.exportarExcel = async function(){
+            const snap = await get(ref(db, "retornos"));
+            let data = []; snap.forEach(d => data.push(d.val()));
+            const ws = XLSX.utils.json_to_sheet(data);
+            const wb = XLSX.utils.book_new();
+            XLSX.utils.book_append_sheet(wb, ws, "Registros");
+            XLSX.writeFile(wb, "Reporte_ANAM_Retornos.xlsx");
         }
     </script>
 </body>
