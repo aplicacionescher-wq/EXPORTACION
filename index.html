@@ -10,172 +10,50 @@
     <script src="https://cdn.jsdelivr.net/npm/xlsx/dist/xlsx.full.min.js"></script>
 
     <style>
-        /* Base del documento */
-        body { 
-            margin: 0; 
-            font-family: Arial, Helvetica, sans-serif; 
-            background: #F4F4F4; 
-            color: #161A1D; 
+        body { margin: 0; font-family: Arial, Helvetica, sans-serif; background: #F4F4F4; color: #161A1D; }
+        .top-bar { background: #611232; color: #fff; padding: 10px 15px; font-size: 13px; font-weight: bold; text-align: center; }
+        
+        .container {
+            position: relative; background: #ffffffee; max-width: 720px;
+            margin: 70px auto 20px; padding: 40px 25px 30px;
+            border-radius: 14px; box-shadow: 0 10px 25px rgba(0,0,0,0.1);
+            border-top: 8px solid #1E5B4F; overflow: hidden;
         }
 
-        /* Barra superior institucional */
-        .top-bar { 
-            background: #611232; 
-            color: #fff; 
-            padding: 10px 15px; 
-            font-size: 13px; 
-            font-weight: bold; 
-            text-align: center; 
+        .container::before {
+            content: ""; position: absolute; inset: 0;
+            background: url("logo-anam.png") center center no-repeat;
+            background-size: 280px; opacity: 0.05; pointer-events: none;
         }
 
-        /* Contenedor principal */
-        .container { 
-            position: relative; 
-            background: #ffffffee; 
-            max-width: 720px; 
-            margin: 70px auto 20px; 
-            padding: 40px 25px 30px; 
-            border-radius: 14px; 
-            box-shadow: 0 10px 25px rgba(0,0,0,0.1); 
-            border-top: 8px solid #1E5B4F; 
-            overflow: hidden; 
-        }
-
-        /* Logo de fondo (Marca de agua) */
-        .container::before { 
-            content: ""; 
-            position: absolute; 
-            inset: 0; 
-            background: url("logo-anam.png") center center no-repeat; 
-            background-size: 280px; 
-            opacity: 0.05; 
-            pointer-events: none; 
-        }
-
-        /* Logo flotante (Gota) */
-        .logo-gota { 
-            position: absolute; 
-            top: -40px; 
-            left: 50%; 
-            transform: translateX(-50%); 
-            width: 85px; 
-            height: 85px; 
-            border-radius: 50%; 
-            display: flex; 
-            justify-content: center; 
-            align-items: center; 
-            backdrop-filter: blur(10px); 
-            background: rgba(255,255,255,0.7); 
-            box-shadow: 0 8px 18px rgba(0,0,0,0.2); 
-            border: 3px solid #A57F2C; 
-            z-index: 2; 
+        .logo-gota {
+            position: absolute; top: -40px; left: 50%; transform: translateX(-50%);
+            width: 85px; height: 85px; border-radius: 50%; display: flex;
+            justify-content: center; align-items: center; backdrop-filter: blur(10px);
+            background: rgba(255,255,255,0.7); box-shadow: 0 8px 18px rgba(0,0,0,0.2);
+            border: 3px solid #A57F2C; z-index: 2;
         }
 
         .logo-gota img { width: 65px; }
+        .title { text-align: center; color: #611232; font-size: 18px; font-weight: bold; margin: 15px 0; }
+        h3 { color: #611232; border-bottom: 2px solid #A57F2C; padding-bottom: 6px; font-size: 15px; }
 
-        .title { 
-            text-align: center; 
-            color: #611232; 
-            font-size: 18px; 
-            font-weight: bold; 
-            margin: 15px 0; 
-        }
-
-        h3 { 
-            color: #611232; 
-            border-bottom: 2px solid #A57F2C; 
-            padding-bottom: 6px; 
-            font-size: 15px; 
-        }
-
-        /* Formulario y controles */
-        label { 
-            font-weight: bold; 
-            font-size: 14px; 
-            display: block; 
-            margin-top: 10px; 
-        }
-
-        select, input, textarea { 
-            width: 100%; 
-            padding: 10px; 
-            margin: 6px 0 14px; 
-            border-radius: 6px; 
-            border: 1px solid #ccc; 
-            font-size: 14px; 
-            box-sizing: border-box; 
-        }
-
+        label { font-weight: bold; font-size: 14px; display: block; margin-top: 10px; }
+        select, input, textarea { width: 100%; padding: 10px; margin: 6px 0 14px; border-radius: 6px; border: 1px solid #ccc; font-size: 14px; box-sizing: border-box; }
         #placas { text-transform: uppercase; font-family: monospace; }
 
-        /* Botones */
-        button { 
-            background: #1E5B4F; 
-            color: #fff; 
-            padding: 12px; 
-            border: none; 
-            width: 100%; 
-            border-radius: 6px; 
-            font-size: 14px; 
-            cursor: pointer; 
-            font-weight: bold; 
-            margin-top: 6px; 
-            transition: 0.3s; 
-        }
+        /* Botones Principales */
+        .btn-main { background: #1E5B4F; color: #fff; padding: 14px; border: none; width: 100%; border-radius: 6px; font-size: 15px; cursor: pointer; font-weight: bold; margin-top: 6px; }
+        .btn-main:disabled { background: #999; cursor: not-allowed; opacity: 0.6; }
 
-        button:hover { opacity: 0.9; }
-
-        button:disabled { 
-            background: #999; 
-            cursor: not-allowed; 
-            opacity: 0.6; 
-        }
+        /* Botones de Consulta (Guinda) */
+        .btn-query { background: #611232; color: #fff; padding: 10px; border: none; width: 100%; border-radius: 6px; font-size: 13px; cursor: pointer; font-weight: bold; margin-top: 8px; }
 
         .hidden { display: none; }
-
-        /* Modal Outlook */
-        .modal { 
-            display: none; 
-            position: fixed; 
-            inset: 0; 
-            background: rgba(0,0,0,.6); 
-            justify-content: center; 
-            align-items: center; 
-            z-index: 1000; 
-        }
-
-        .modal-content { 
-            background: #fff; 
-            padding: 30px; 
-            border-radius: 12px; 
-            width: 320px; 
-            text-align: center; 
-            border-top: 6px solid #0078d4; 
-        }
-
-        .btn-outlook { 
-            background: #0078d4; 
-            color: white; 
-            padding: 15px; 
-            width: 100%; 
-            border-radius: 6px; 
-            border: none; 
-            font-weight: bold; 
-            cursor: pointer; 
-            margin-top: 15px; 
-        }
-
-        /* Tabla de resultados */
-        table { width: 100%; border-collapse: collapse; margin-top: 15px; }
+        table { width: 100%; border-collapse: collapse; margin-top: 15px; background: #fff; }
         th, td { border: 1px solid #ccc; padding: 8px; font-size: 12px; text-align: center; }
         th { background: #611232; color: #fff; }
-
-        .footer { 
-            text-align: center; 
-            font-size: 11px; 
-            color: #98989A; 
-            margin: 20px 0; 
-        }
+        .footer { text-align: center; font-size: 11px; color: #98989A; margin: 20px 0; }
     </style>
 </head>
 
@@ -218,15 +96,14 @@
                 <textarea id="mercancia" placeholder="Detalle la mercancía sobre-dimensionada"></textarea>
             </div>
 
-            <button type="submit" id="btnGenerar" disabled>GENERAR CORREO</button>
+            <button type="submit" id="btnGenerar" class="btn-main" disabled>GENERAR Y ABRIR OUTLOOK</button>
 
             <hr style="margin: 30px 0; border: 0; border-top: 1px solid #ddd;">
 
-            <label>Consulta por Fecha</label>
+            <label>Historial</label>
             <input type="date" id="fechaConsulta">
-            
-            <button type="button" onclick="consultarPlacas()" style="background:#611232;">CONSULTAR PLACAS</button>
-            <button type="button" onclick="exportarExcel()" style="background:#611232;">EXPORTAR A EXCEL</button>
+            <button type="button" onclick="consultarPlacas()" class="btn-query">CONSULTAR PLACAS</button>
+            <button type="button" onclick="exportarExcel()" class="btn-query">EXPORTAR A EXCEL</button>
 
             <div id="tablaResultados"></div>
         </form>
@@ -234,17 +111,7 @@
 
     <div class="footer">© 2026 Agencia Nacional de Aduanas de México</div>
 
-    <div id="selectorModal" class="modal">
-        <div class="modal-content">
-            <h2 style="color:#0078d4; margin-top:0;">Outlook App</h2>
-            <p style="font-size: 14px; color: #555;">La solicitud se guardó correctamente. Presiona para enviar desde Outlook.</p>
-            <button onclick="enviarYLimpiarCaptura()" class="btn-outlook">ABRIR EN OUTLOOK</button>
-            <button onclick="cerrarModal()" style="background:none; border:none; color:#999; margin-top:15px; cursor:pointer;">Cancelar</button>
-        </div>
-    </div>
-
     <script type="module">
-        // --- CONFIGURACIÓN FIREBASE ---
         import { initializeApp } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-app.js";
         import { getDatabase, ref, push, runTransaction, get } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-database.js";
 
@@ -261,17 +128,14 @@
         const app = initializeApp(firebaseConfig);
         const db = getDatabase(app);
 
-        // --- REFERENCIAS ELEMENTOS ---
         const form = document.getElementById("formRetorno");
         const tipo = document.getElementById("tipo");
         const mercanciaDiv = document.getElementById("mercanciaDiv");
-        const modal = document.getElementById("selectorModal");
         const btnGenerar = document.getElementById("btnGenerar");
 
         const correosBase = ["juan.reyesg@anam.gob.mx", "vyc.altamira@anam.gob.mx", "alejandra.munoz@anam.gob.mx", "jorge.silva@anam.gob.mx", "abraham.gomez@anam.gob.mx", "daniel.santosh@anam.gob.mx", "christian.monrreal@anam.gob.mx", "monica.becerra@anam.gob.mx", "anahi.santiago@anam.gob.mx"];
         const correosExtra = ["emilio.garin@anam.gob.mx", "sergio.diazr@anam.gob.mx", "oscar.narro@anam.gob.mx"];
 
-        // --- FUNCIONES INTERFAZ ---
         function actualizarReloj() { document.getElementById("fechaHora").textContent = new Date().toLocaleString(); }
         setInterval(actualizarReloj, 1000); actualizarReloj();
         document.getElementById("fechaConsulta").value = new Date().toISOString().split("T")[0];
@@ -284,11 +148,13 @@
             document.getElementById("mercancia").required = esRevision;
         });
 
-        // --- PROCESO DE GENERACIÓN ---
+        // --- LÓGICA DE ENVÍO CORREGIDA ---
         form.addEventListener("submit", async (e) => {
             e.preventDefault();
+            btnGenerar.disabled = true;
+            btnGenerar.textContent = "PROCESANDO...";
 
-            // 1. Generación de Folio
+            // 1. Generar Folio
             const hoy = new Date();
             const idFecha = hoy.getFullYear() + ("0" + (hoy.getMonth() + 1)).slice(-2) + ("0" + hoy.getDate()).slice(-2);
             const refCont = ref(db, 'contadorFolios/' + idFecha);
@@ -296,80 +162,60 @@
             const folioFinal = `RET-${idFecha}-${res.snapshot.val().toString().padStart(3, "0")}`;
             document.getElementById("folio").textContent = folioFinal;
 
-            // 2. Definir Destinatarios
-            let destinatarios = [...correosBase];
-            if (tipo.value === "revision") destinatarios = destinatarios.concat(correosExtra);
-            window.finalTo = destinatarios.join(",");
-
-            // 3. Redacción del Cuerpo (Sin omitir nada)
+            // 2. Cuerpo del Mensaje e Interfaz
             const saludo = (hoy.getHours() < 12) ? "Buenos días" : (hoy.getHours() < 19) ? "Buenas tardes" : "Buenas noches";
             const op = document.getElementById("operacion").value;
             const placasVal = document.getElementById("placas").value;
             const operadorVal = document.getElementById("operador").value;
+            const mercaVal = document.getElementById("mercancia").value;
 
             let cuerpo = saludo + ",\n\n";
-
             if (tipo.value === "revision") {
                 cuerpo += "Por medio del presente, se solicita el valioso apoyo de la Subdirección de Vigilancia y Control para realizar la apertura del carril de excesos de exportación. Lo anterior, con la finalidad de permitir el ingreso y posicionamiento de la unidad con exceso de dimensiones en la explanada de vacíos.\n\n" +
                           "Se les solicita de la manera más atenta confirmar en cuanto la unidad se encuentre debidamente posicionada.\n\n" +
                           "PLACAS:\n" + placasVal + "\n\n" +
-                          "MERCANCÍA:\n" + document.getElementById("mercancia").value + "\n\n" +
+                          "MERCANCÍA:\n" + mercaVal + "\n\n" +
                           "Posteriormente, la unidad será inspeccionada por el equipo ZBV del Departamento de Equipos No Intrusivos en la explanada de vacíos de importación.\n\n" + 
                           "De igual forma, se solicita dar aviso al personal del módulo una vez que la unidad haya sido revisada, así como responder a este correo electrónico al concluir la inspección.\n\n" +
-                          "Sin más por el momento, quedo atento a sus comentarios.\n\n" +
-                          "Gracias.\n\n" +
-                          "Saludos cordiales,\n" + operadorVal + "\nMódulos\nANAM Altamira";
+                          "Sin más por el momento, quedo atento a sus comentarios.\n\nGracias.\n\nSaludos cordiales,\n" + operadorVal + "\nMódulos\nANAM Altamira";
             } else {
                 const area = (op === "EXPORTACION") ? "del carril de excesos a la exportación" : "de la Puerta Caracol";
-                cuerpo += "El presente correo es para solicitar la apertura " + area + " para el retorno al vehículo con las placas siguientes:\n\n" +
-                          "PLACAS:\n" + placasVal + "\n\n" +
-                          "Tipo de retorno:\n" + tipo.options[tipo.selectedIndex].text + "\n\n" +
-                          "Gracias.\n\n" +
-                          "Saludos cordiales,\n" + operadorVal + "\nMódulos\nANAM Altamira";
+                cuerpo += "El presente correo es para solicitar la apertura " + area + " para el retorno al vehículo con las placas siguientes:\n\nPLACAS:\n" + placasVal + "\n\nTipo de retorno:\n" + tipo.options[tipo.selectedIndex].text + "\n\nGracias.\n\nSaludos cordiales,\n" + operadorVal + "\nMódulos\nANAM Altamira";
             }
 
-            // 4. Guardar en Base de Datos
-            await push(ref(db, "retornos"), { 
-                folio: folioFinal, 
-                fecha: hoy.toISOString(), 
-                operador: operadorVal, 
-                placas: placasVal, 
-                tipo: tipo.value 
-            });
+            // 3. Guardar Firebase
+            await push(ref(db, "retornos"), { folio: folioFinal, fecha: hoy.toISOString(), operador: operadorVal, placas: placasVal, tipo: tipo.value });
 
-            // 5. Preparar Modal
-            window.finalSub = `${op} - ${tipo.options[tipo.selectedIndex].text}`;
-            window.finalBody = cuerpo;
-            modal.style.display = "flex";
-        });
+            // 4. ESTRATEGIA ANTI-ERROR: Uso de Mailto como enlace limpio
+            let destinatarios = (tipo.value === "revision") ? correosBase.concat(correosExtra) : correosBase;
+            const to = destinatarios.join(",");
+            const subject = encodeURIComponent(`${op} - ${tipo.options[tipo.selectedIndex].text}`);
+            const body = encodeURIComponent(cuerpo);
 
-        // --- FUNCIÓN PARA ABRIR OUTLOOK Y REFRESCAR ---
-        window.enviarYLimpiarCaptura = function() {
-            const to = window.finalTo;
-            const sub = encodeURIComponent(window.finalSub);
-            const body = encodeURIComponent(window.finalBody);
+            // Intentamos abrir Outlook directamente. Si falla el protocolo ms-outlook, el navegador usará mailto.
+            const outlookUrl = `ms-outlook://compose?to=${to}&subject=${subject}&body=${body}`;
+            const mailtoUrl = `mailto:${to}?subject=${subject}&body=${body}`;
 
-            // Abre App Outlook (Protocolo específico)
-            window.location.href = `ms-outlook://compose?to=${to}&subject=${sub}&body=${body}`;
+            // Ejecutamos la redirección
+            window.location.href = outlookUrl;
 
-            // Fallback si la App no existe
-            setTimeout(() => { 
-                if (!document.hidden) window.location.href = `mailto:${to}?subject=${sub}&body=${body}`; 
-            }, 1200);
+            // Si a los 500ms no ha salido de la página, usamos el mailto estándar
+            setTimeout(() => {
+                if (!document.hidden) {
+                    window.location.href = mailtoUrl;
+                }
+            }, 500);
 
-            // --- REFRESCADO DE LA CAPTURA ---
+            // 5. REFRESCADO AUTOMÁTICO
             setTimeout(() => {
                 form.reset();
                 document.getElementById("folio").textContent = "--";
                 mercanciaDiv.classList.add("hidden");
+                btnGenerar.textContent = "GENERAR Y ABRIR OUTLOOK";
                 btnGenerar.disabled = true;
-                cerrarModal();
-            }, 800);
-        };
+            }, 1500);
+        });
 
-        window.cerrarModal = () => { modal.style.display = "none"; };
-
-        // --- CONSULTA Y EXCEL ---
         window.consultarPlacas = async function() {
             const snap = await get(ref(db, "retornos"));
             const fecha = document.getElementById("fechaConsulta").value;
