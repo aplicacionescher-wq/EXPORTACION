@@ -4,47 +4,195 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>ANAM - Solicitud de Retornos</title>
-    
+
     <link rel="manifest" href="manifest.json">
     <meta name="theme-color" content="#611232">
     <script src="https://cdn.jsdelivr.net/npm/xlsx/dist/xlsx.full.min.js"></script>
 
     <style>
-        body { margin: 0; font-family: Arial, Helvetica, sans-serif; background: #F4F4F4; color: #161A1D; }
-        .top-bar { background: #611232; color: #fff; padding: 10px 15px; font-size: 13px; font-weight: bold; text-align: center; }
-        .container { position: relative; background: #ffffffee; max-width: 720px; margin: 70px auto 20px; padding: 40px 25px 30px; border-radius: 14px; box-shadow: 0 10px 25px rgba(0,0,0,0.1); border-top: 8px solid #1E5B4F; overflow: hidden; }
-        .container::before { content: ""; position: absolute; inset: 0; background: url("logo-anam.png") center center no-repeat; background-size: 280px; opacity: 0.05; pointer-events: none; }
-        .logo-gota { position: absolute; top: -40px; left: 50%; transform: translateX(-50%); width: 85px; height: 85px; border-radius: 50%; display: flex; justify-content: center; align-items: center; backdrop-filter: blur(10px); background: rgba(255,255,255,0.7); box-shadow: 0 8px 18px rgba(0,0,0,0.2); border: 3px solid #A57F2C; z-index: 2; }
+        body {
+            margin: 0;
+            font-family: Arial, Helvetica, sans-serif;
+            background: #F4F4F4;
+            color: #161A1D;
+        }
+
+        .top-bar {
+            background: #611232;
+            color: #fff;
+            padding: 10px 15px;
+            font-size: 13px;
+            font-weight: bold;
+            text-align: center;
+        }
+
+        .container {
+            position: relative;
+            background: #ffffffee;
+            max-width: 720px;
+            margin: 70px auto 20px;
+            padding: 40px 25px 30px;
+            border-radius: 14px;
+            box-shadow: 0 10px 25px rgba(0,0,0,0.1);
+            border-top: 8px solid #1E5B4F;
+            overflow: hidden;
+        }
+
+        .container::before {
+            content: "";
+            position: absolute;
+            inset: 0;
+            background: url("logo-anam.png") center center no-repeat;
+            background-size: 280px;
+            opacity: 0.05;
+            pointer-events: none;
+        }
+
+        .logo-gota {
+            position: absolute;
+            top: -40px;
+            left: 50%;
+            transform: translateX(-50%);
+            width: 85px;
+            height: 85px;
+            border-radius: 50%;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            backdrop-filter: blur(10px);
+            background: rgba(255,255,255,0.7);
+            box-shadow: 0 8px 18px rgba(0,0,0,0.2);
+            border: 3px solid #A57F2C;
+            z-index: 2;
+        }
+
         .logo-gota img { width: 65px; }
-        .title { text-align: center; color: #611232; font-size: 18px; font-weight: bold; margin: 15px 0; }
-        h3 { color: #611232; border-bottom: 2px solid #A57F2C; padding-bottom: 6px; font-size: 15px; }
+
+        .title {
+            text-align: center;
+            color: #611232;
+            font-size: 18px;
+            font-weight: bold;
+            margin: 15px 0;
+        }
+
+        h3 {
+            color: #611232;
+            border-bottom: 2px solid #A57F2C;
+            padding-bottom: 6px;
+            font-size: 15px;
+        }
+
         label { font-weight: bold; font-size: 14px; }
-        select, input, textarea { width: 100%; padding: 9px; margin: 6px 0 14px; border-radius: 6px; border: 1px solid #ccc; font-size: 14px; box-sizing: border-box; }
+
+        select, input, textarea {
+            width: 100%;
+            padding: 9px;
+            margin: 6px 0 14px;
+            border-radius: 6px;
+            border: 1px solid #ccc;
+            font-size: 14px;
+            box-sizing: border-box;
+        }
+
         #placas { text-transform: uppercase; }
-        button { background: #1E5B4F; color: #fff; padding: 10px; border: none; width: 100%; border-radius: 6px; font-size: 14px; cursor: pointer; font-weight: bold; margin-top: 6px; transition: 0.3s; }
+
+        button {
+            background: #1E5B4F;
+            color: #fff;
+            padding: 10px;
+            border: none;
+            width: 100%;
+            border-radius: 6px;
+            font-size: 14px;
+            cursor: pointer;
+            font-weight: bold;
+            margin-top: 6px;
+        }
+
         button:hover { opacity: 0.9; }
-        button:disabled { background: #999; cursor: not-allowed; opacity: 0.6; }
+
+        button:disabled {
+            background: #999;
+            cursor: not-allowed;
+            opacity: 0.6;
+        }
+
         .hidden { display: none; }
-        
-        /* Modal Estilo Institucional */
-        .modal { display: none; position: fixed; inset: 0; background: rgba(0,0,0,.5); justify-content: center; align-items: center; z-index: 1000; }
-        .modal-content { background: #fff; padding: 25px; border-radius: 12px; width: 320px; text-align: center; border-top: 6px solid #611232; box-shadow: 0 10px 30px rgba(0,0,0,0.3); }
-        .btn-abrir { background: #1E5B4F; color: white; padding: 15px; width: 100%; border-radius: 6px; border: none; font-weight: bold; margin-top: 20px; cursor: pointer; font-size: 16px; }
-        
-        table { width: 100%; border-collapse: collapse; margin-top: 15px; }
-        th, td { border: 1px solid #ccc; padding: 8px; font-size: 12px; text-align: center; }
-        th { background: #611232; color: #fff; }
-        .footer { text-align: center; font-size: 11px; color: #98989A; margin: 20px 0; }
+
+        .modal {
+            display: none;
+            position: fixed;
+            inset: 0;
+            background: rgba(0,0,0,.5);
+            justify-content: center;
+            align-items: center;
+            z-index: 1000;
+        }
+
+        .modal-content {
+            background: #fff;
+            padding: 25px;
+            border-radius: 12px;
+            width: 320px;
+            text-align: center;
+            border-top: 6px solid #0078d4;
+        }
+
+        .btn-outlook {
+            background: #0078d4;
+            color: white;
+            padding: 15px;
+            width: 100%;
+            border-radius: 6px;
+            border: none;
+            font-weight: bold;
+            cursor: pointer;
+            margin-top: 15px;
+        }
+
+        table {
+            width: 100%;
+            border-collapse: collapse;
+            margin-top: 15px;
+        }
+
+        th, td {
+            border: 1px solid #ccc;
+            padding: 6px;
+            font-size: 12px;
+            text-align: center;
+        }
+
+        th {
+            background: #611232;
+            color: #fff;
+        }
+
+        .footer {
+            text-align: center;
+            font-size: 11px;
+            color: #98989A;
+            margin: 20px 0;
+        }
     </style>
 </head>
+
 <body>
 
-    <div class="top-bar">Gobierno de México | Agencia Nacional de Aduanas de México</div>
+    <div class="top-bar">
+        Gobierno de México | Agencia Nacional de Aduanas de México
+    </div>
 
     <div class="container">
-        <div class="logo-gota"><img src="logo-anam2.png" alt="Logo"></div>
+        <div class="logo-gota">
+            <img src="logo-anam2.png" alt="Logo">
+        </div>
+
         <div class="title">Solicitud de Retornos Módulos</div>
+
         <h3>Generador de Solicitudes</h3>
+
         <p><strong>Folio:</strong> <span id="folio">--</span></p>
         <p><strong>Fecha:</strong> <span id="fechaHora"></span></p>
 
@@ -64,11 +212,11 @@
                 <option value="horario">Retorno Fuera De Horario</option>
                 <option value="sin_extra">Retorno Sin Servicio Extraordinario</option>
                 <option value="carril">Retorno Por Equivocación de Carril</option>
-                <option value="revision">Solicitud de Revisión Con ZBV De Mercancía Sobre-Dimensionada</option>
+                <option value="revision">Solicitud de Revisión De Mercancía Sobre-Dimensionada</option>
             </select>
 
             <label>Placas</label>
-            <textarea id="placas" placeholder="PLACAS" required></textarea>
+            <textarea id="placas" placeholder="Introduce placas" required></textarea>
 
             <div id="mercanciaDiv" class="hidden">
                 <label>Descripción de la Mercancía</label>
@@ -78,24 +226,27 @@
             <button type="submit" id="btnGenerar" disabled>Generar Correo</button>
 
             <hr style="margin: 20px 0; border: 0; border-top: 1px solid #ccc;">
-            <label>Consulta de Registros</label>
+
+            <label>Seleccionar fecha (opcional)</label>
             <input type="date" id="fechaConsulta">
-            <button type="button" onclick="consultarPlacas()" style="background:#611232;">Consultar Placas</button>
+
+            <button type="button" onclick="consultarPlacas()">Consultar Placas</button>
             <button type="button" onclick="exportarExcel()" style="background:#A57F2C;">Exportar a Excel</button>
+
             <div id="tablaResultados"></div>
         </form>
     </div>
 
-    <div class="footer">© 2026 Agencia Nacional de Aduanas de México</div>
+    <div class="footer">
+        © 2026 Agencia Nacional de Aduanas de México
+    </div>
 
     <div id="selectorModal" class="modal">
         <div class="modal-content">
-            <h3 style="margin-top:0;">Solicitud Lista</h3>
-            <p style="font-size: 13px; color: #555;">Presiona el botón para enviar la información a través de <strong>Outlook</strong>.</p>
-            
-            <button onclick="abrirApp()" class="btn-abrir">ENVIAR POR OUTLOOK</button>
-            
-            <button onclick="cerrarModal()" style="background:none; color:#666; border:none; margin-top:15px; cursor:pointer;">Cancelar</button>
+            <h3 style="color:#0078d4; margin-top:0;">Enviar vía Outlook</h3>
+            <p style="font-size: 14px; color: #555;">La solicitud se registró con éxito. Haz clic abajo para abrir la App de Outlook.</p>
+            <button onclick="abrirAppOutlook()" class="btn-outlook">ABRIR EN OUTLOOK</button>
+            <button onclick="cerrarModal()" style="background:none; border:none; color:#999; margin-top:15px; cursor:pointer;">Cancelar</button>
         </div>
     </div>
 
@@ -126,107 +277,136 @@
         const modal = document.getElementById("selectorModal");
         const btnGenerar = document.getElementById("btnGenerar");
 
-        const correosBase = ["juan.reyesg@anam.gob.mx", "vyc.altamira@anam.gob.mx", "alejandra.munoz@anam.gob.mx", "jorge.silva@anam.gob.mx", "abraham.gomez@anam.gob.mx", "daniel.santosh@anam.gob.mx", "christian.monrreal@anam.gob.mx", "monica.becerra@anam.gob.mx", "anahi.santiago@anam.gob.mx"];
-        const correosExtra = ["emilio.garin@anam.gob.mx", "sergio.diazr@anam.gob.mx", "oscar.narro@anam.gob.mx"];
+        const listaCorreosBase = ["juan.reyesg@anam.gob.mx", "vyc.altamira@anam.gob.mx", "alejandra.munoz@anam.gob.mx", "jorge.silva@anam.gob.mx", "abraham.gomez@anam.gob.mx", "daniel.santosh@anam.gob.mx", "christian.monrreal@anam.gob.mx", "monica.becerra@anam.gob.mx", "anahi.santiago@anam.gob.mx"];
+        const correosExtrasRevision = ["emilio.garin@anam.gob.mx", "sergio.diazr@anam.gob.mx", "oscar.narro@anam.gob.mx"];
 
-        function validar() { btnGenerar.disabled = !form.checkValidity(); }
-        form.addEventListener("input", validar);
-        
-        tipo.addEventListener("change", () => {
-            if (tipo.value === "revision") { mercanciaDiv.classList.remove("hidden"); mercancia.required = true; }
-            else { mercanciaDiv.classList.add("hidden"); mercancia.required = false; }
-            validar();
+        let tablaVisible = false;
+
+        function validarFormulario() {
+            btnGenerar.disabled = !form.checkValidity();
+        }
+
+        form.addEventListener("input", validarFormulario);
+
+        placas.addEventListener("input", () => {
+            placas.value = placas.value.toUpperCase();
         });
 
-        placas.addEventListener("input", () => { placas.value = placas.value.toUpperCase(); validar(); });
+        tipo.addEventListener("change", () => {
+            if (tipo.value === "revision") {
+                mercanciaDiv.classList.remove("hidden");
+                mercancia.required = true;
+            } else {
+                mercanciaDiv.classList.add("hidden");
+                mercancia.required = false;
+                mercancia.value = "";
+            }
+            validarFormulario();
+        });
 
-        function actualizarFecha() { document.getElementById("fechaHora").textContent = new Date().toLocaleString(); }
+        function actualizarFecha() {
+            document.getElementById("fechaHora").textContent = new Date().toLocaleString();
+        }
         setInterval(actualizarFecha, 1000);
         actualizarFecha();
+
         document.getElementById("fechaConsulta").value = new Date().toISOString().split("T")[0];
 
         async function generarFolio() {
             const hoy = new Date();
-            const base = hoy.getFullYear() + ("0" + (hoy.getMonth() + 1)).slice(-2) + ("0" + hoy.getDate()).slice(-2);
-            const refCont = ref(db, 'contadorFolios/' + base);
-            const res = await runTransaction(refCont, (c) => (c || 0) + 1);
-            return `RET-${base}-${res.snapshot.val().toString().padStart(3, "0")}`;
+            const base = hoy.getFullYear().toString() + ("0" + (hoy.getMonth() + 1)).slice(-2) + ("0" + hoy.getDate()).slice(-2);
+            const contadorRef = ref(db, 'contadorFolios/' + base);
+            const result = await runTransaction(contadorRef, (c) => (c || 0) + 1);
+            return "RET-" + base + "-" + result.snapshot.val().toString().padStart(3, "0");
         }
 
         form.addEventListener("submit", async e => {
             e.preventDefault();
+
+            let correosFinales = [...listaCorreosBase];
+            if (tipo.value === "revision") {
+                correosFinales = correosFinales.concat(correosExtrasRevision);
+            }
+            window.destinatariosOutlook = correosFinales.join(",");
+
             const folio = await generarFolio();
             document.getElementById("folio").textContent = folio;
 
-            let lista = [...correosBase];
-            if(tipo.value === "revision") lista = lista.concat(correosExtra);
-            window.destinatarios = lista.join(",");
-
             const hora = new Date().getHours();
             const saludo = (hora < 12) ? "Buenos días" : (hora < 19) ? "Buenas tardes" : "Buenas noches";
-            
-            let msg = "";
+
+            let cuerpo = saludo + ",\n\n";
+
             if (tipo.value === "revision") {
-                msg = `${saludo},\n\nSolicito su valioso apoyo para la apertura del carril de excesos de exportación, para el ingreso de excesos de dimensiones.\n\nPLACAS:\n${placas.value}\n\nMERCANCÍA:\n${mercancia.value}\n\nPara posteriormente ser inspeccionado por el equipo ZBV del departamento de equipos no intrusivos en la explanada de vacíos de importación.\n\nGracias.\n\nSaludos cordiales,\n${operador.value}\nMódulos\nANAM Altamira`;
+                cuerpo += "Por medio del presente, se solicita el valioso apoyo de la Subdirección de Vigilancia y Control para realizar la apertura del carril de excesos de exportación. Lo anterior, con la finalidad de permitir el ingreso y posicionamiento de la unidad con exceso de dimensiones en la explanada de vacíos.\n\n" +
+                          "PLACAS:\n" + placas.value + "\n\n" +
+                          "MERCANCÍA:\n" + mercancia.value + "\n\n" +
+                          "Posteriormente, la unidad será inspeccionada por el equipo ZBV del Departamento de Equipos No Intrusivos.\n\n" +
+                          "Gracias.\n\nSaludos cordiales,\n" + operador.value + "\nANAM Altamira";
             } else {
-                const lugar = operacion.value === "EXPORTACION" ? "del carril de excesos a la exportación" : "de la Puerta Caracol";
-                msg = `${saludo},\n\nEl presente correo es para solicitar la apertura ${lugar} para el retorno al vehículo con las placas siguientes:\n\nPLACAS:\n${placas.value}\n\nTipo de retorno:\n${tipo.options[tipo.selectedIndex].text}\n\nGracias.\n\nSaludos cordiales,\n${operador.value}\nMódulos\nANAM Altamira`;
+                const area = (operacion.value === "EXPORTACION") ? "del carril de excesos a la exportación" : "de la Puerta Caracol";
+                cuerpo += "El presente correo es para solicitar la apertura " + area + " para el retorno al vehículo con las placas siguientes:\n\n" +
+                          "PLACAS:\n" + placas.value + "\n\n" +
+                          "Tipo de retorno:\n" + tipo.options[tipo.selectedIndex].text + "\n\n" +
+                          "Gracias.\n\nSaludos cordiales,\n" + operador.value + "\nANAM Altamira";
             }
 
-            await push(ref(db, "retornos"), { folio, fecha: new Date().toISOString(), placas: placas.value, operador: operador.value });
+            await push(ref(db, "retornos"), {
+                folio,
+                fecha: new Date().toISOString(),
+                operacion: operacion.value,
+                operador: operador.value,
+                tipo: tipo.value,
+                placas: placas.value,
+                mercancia: mercancia.value || ""
+            });
 
-            window.asuntoActual = `${operacion.value} - ${tipo.options[tipo.selectedIndex].text}`;
-            window.cuerpoActual = msg;
+            window.asuntoActual = operacion.value + " - " + tipo.options[tipo.selectedIndex].text;
+            window.cuerpoActual = cuerpo;
 
             modal.style.display = "flex";
+        });
+
+        window.abrirAppOutlook = function() {
+            const to = window.destinatariosOutlook;
+            const sub = encodeURIComponent(window.asuntoActual);
+            const body = encodeURIComponent(window.cuerpoActual);
+
+            // Fuerza apertura en App Outlook
+            window.location.href = `ms-outlook://compose?to=${to}&subject=${sub}&body=${body}`;
+
+            // Fallback en caso de que no tenga la app (abre mail predeterminado)
+            setTimeout(() => {
+                if (!document.hidden) {
+                    window.location.href = `mailto:${to}?subject=${sub}&body=${body}`;
+                }
+            }, 1200);
+
+            cerrarModal();
             form.reset();
             mercanciaDiv.classList.add("hidden");
             btnGenerar.disabled = true;
-        });
+            document.getElementById("folio").textContent = "--";
+        };
 
-        // LÓGICA DE FALLBACK COMPLEMENTADA (Para iPhone y Android)
-        window.abrirApp = function() {
-            const to = window.destinatarios;
-            const subject = encodeURIComponent(window.asuntoActual);
-            const body = encodeURIComponent(window.cuerpoActual);
-
-            const outlookUrl = `ms-outlook://compose?to=${to}&subject=${subject}&body=${body}`;
-            const mailtoUrl = `mailto:${to}?subject=${subject}&body=${body}`;
-            
-            // 1. Intento principal con protocolo de Outlook
-            window.location.href = outlookUrl;
-
-            // 2. Detección de éxito/falla
-            let salioDePagina = false;
-            const detectMove = () => { salioDePagina = true; };
-            window.addEventListener("visibilitychange", detectMove);
-
-            setTimeout(() => {
-                window.removeEventListener("visibilitychange", detectMove);
-                // Si seguimos en la misma pestaña, el protocolo ms-outlook falló
-                if (!salioDePagina) {
-                    // 3. Fallback al mailto estándar (abrirá el correo predeterminado, ej. Outlook configurado)
-                    window.location.href = mailtoUrl;
-                }
-            }, 1000);
-
-            cerrarModal();
-        }
-
-        window.cerrarModal = () => { modal.style.display = "none"; };
+        window.cerrarModal = function() {
+            modal.style.display = "none";
+        };
 
         window.consultarPlacas = async function() {
             const contenedor = document.getElementById("tablaResultados");
-            if(tablaVisible) { contenedor.innerHTML = ""; tablaVisible = false; return; }
-            const snapshot = await get(ref(db, "retornos"));
             const fechaFiltro = document.getElementById("fechaConsulta").value;
+            if (tablaVisible) { contenedor.innerHTML = ""; tablaVisible = false; return; }
+            
+            const snapshot = await get(ref(db, "retornos"));
             let html = "<table><tr><th>Operador</th><th>Placas</th></tr>";
             snapshot.forEach(doc => {
                 let d = doc.val();
-                if(d.fecha.startsWith(fechaFiltro)) html += `<tr><td>${d.operador}</td><td>${d.placas}</td></tr>`;
+                if (d.fecha.startsWith(fechaFiltro)) {
+                    html += "<tr><td>" + d.operador + "</td><td>" + d.placas + "</td></tr>";
+                }
             });
-            html += "</table>";
-            contenedor.innerHTML = html;
+            contenedor.innerHTML = html + "</table>";
             tablaVisible = true;
         };
 
