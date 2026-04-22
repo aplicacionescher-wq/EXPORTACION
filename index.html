@@ -52,7 +52,6 @@
         th { background: #611232; color: #fff; }
         .footer { text-align: center; font-size: 11px; color: #98989A; margin: 20px 0; }
 
-        /* MODAL */
         .modal { display: none; position: fixed; z-index: 999; inset: 0; background: rgba(0,0,0,0.6); justify-content: center; align-items: center; }
         .modal-content { background: #fff; padding: 25px; border-radius: 12px; width: 90%; max-width: 420px; text-align: center; box-shadow: 0 10px 25px rgba(0,0,0,0.2); }
         .modal h2 { color: #611232; margin-bottom: 10px; }
@@ -157,7 +156,6 @@
         let correosGlobal = "";
         let subjectGlobal = "";
         let cuerpoGlobal = "";
-        let outlookUrlGlobal = "";
         let mailtoGlobal = "";
 
         function actualizarReloj(){ document.getElementById("fechaHora").textContent=new Date().toLocaleString(); }
@@ -205,9 +203,7 @@
             subjectGlobal = subject;
             cuerpoGlobal = cuerpo;
             
-            // ACCESO DIRECTO PARA IOS
-            outlookUrlGlobal = `ms-outlook://compose?to=${to}&subject=${encodeURIComponent(subject)}&body=${encodeURIComponent(cuerpo)}`;
-            // ACCESO DIRECTO PARA ESCRITORIO / OTROS
+            // Mailto estándar para el botón "Correo predeterminado"
             mailtoGlobal = `mailto:${to}?subject=${encodeURIComponent(subject)}&body=${encodeURIComponent(cuerpo)}`;
 
             document.getElementById("modal").style.display="flex";
@@ -220,34 +216,29 @@
             },1000);
         });
 
-        /* ===== LÓGICA DEL ACCESO DIRECTO ===== */
+        /* ===== ACCESO DIRECTO FORZADO A OUTLOOK ===== */
 
         window.abrirOutlook = function() {
             const isIOS = /iPhone|iPad|iPod/i.test(navigator.userAgent);
             const isAndroid = /Android/i.test(navigator.userAgent);
-            const start = Date.now();
-
-            // Si la App no responde en 2.5s, se asume que no está instalada y se usa mailto
-            const fallback = setTimeout(() => {
-                if (Date.now() - start < 3000) {
-                    window.location.href = mailtoGlobal;
-                }
-            }, 2500);
+            
+            const to = encodeURIComponent(correosGlobal);
+            const sub = encodeURIComponent(subjectGlobal);
+            const body = encodeURIComponent(cuerpoGlobal);
 
             if (isIOS) {
-                // Acceso directo iOS (ms-outlook://)
-                window.location.href = outlookUrlGlobal;
+                // En iOS, ms-outlook:// es el esquema único que ignora la configuración predeterminada
+                // Se construye de forma que la app lo intercepte directamente.
+                const iosUrl = `ms-outlook://compose?to=${to}&subject=${sub}&body=${body}`;
+                window.location.replace(iosUrl);
             } else if (isAndroid) {
-                // Acceso directo Android (intent:// forzando el paquete de Outlook)
-                const intentUrl = `intent://compose?to=${encodeURIComponent(correosGlobal)}&subject=${encodeURIComponent(subjectGlobal)}&body=${encodeURIComponent(cuerpoGlobal)}#Intent;scheme=ms-outlook;package=com.microsoft.office.outlook;end`;
-                window.location.href = intentUrl;
+                // En Android, el Intent con el paquete forzado nunca fallará si la app está instalada.
+                const androidIntent = `intent://compose?to=${to}&subject=${sub}&body=${body}#Intent;scheme=ms-outlook;package=com.microsoft.office.outlook;end`;
+                window.location.href = androidIntent;
             } else {
-                // Fallback para PC
+                // Si es PC, intentamos abrir el mailto (Outlook suele capturarlo si está instalado)
                 window.location.href = mailtoGlobal;
             }
-
-            // Si el usuario cambia a la app de Outlook, cancelamos el fallback
-            window.onblur = () => clearTimeout(fallback);
         };
 
         window.abrirCorreoNormal = function() {
