@@ -72,7 +72,6 @@
         <form id="formRetorno">
             <label>Tipo de Operación</label>
             <select id="operacion" required>
-                <option>IMPORTACION</option>
                 <option selected>EXPORTACION</option>
             </select>
 
@@ -85,7 +84,7 @@
                 <option value="horario">Retorno Fuera De Horario</option>
                 <option value="sin_extra">Retorno Sin Servicio Extraordinario</option>
                 <option value="carril">Retorno Por Equivocación de Carril</option>
-                <option value="revision">Solicitud de Revisión De Mercancía Sobre-Dimensionada</option>
+                <option value="revision">Solicitud de Revisión Con ZBV De Mercancía Sobre-Dimensionada</option>
             </select>
 
             <label>Placas</label>
@@ -96,7 +95,7 @@
                 <textarea id="mercancia" placeholder="Detalle la mercancía sobre-dimensionada"></textarea>
             </div>
 
-            <button type="submit" id="btnGenerar" class="btn-main" disabled>GENERAR Y ABRIR OUTLOOK</button>
+            <button type="submit" id="btnGenerar" class="btn-main" disabled>Generar y Abrir Outlook</button>
 
             <hr style="margin: 30px 0; border: 0; border-top: 1px solid #ddd;">
 
@@ -211,7 +210,7 @@
                 form.reset();
                 document.getElementById("folio").textContent = "--";
                 mercanciaDiv.classList.add("hidden");
-                btnGenerar.textContent = "GENERAR Y ABRIR OUTLOOK";
+                btnGenerar.textContent = "Generar y Abrir Outlook";
                 btnGenerar.disabled = true;
             }, 1500);
         });
