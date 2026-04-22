@@ -101,7 +101,7 @@
                 <textarea id="mercancia" placeholder="Detalle de la carga sobredimensionada"></textarea>
             </div>
 
-            <button type="submit" id="btnGenerar" class="btn-main" disabled>Generar Folio</button>
+            <button type="submit" id="btnGenerar" class="btn-main" disabled>Generar Correo</button>
 
             <hr style="margin: 30px 0; border: 0; border-top: 1px solid #ddd;">
             <input type="date" id="fechaConsulta">
@@ -190,7 +190,7 @@
             } else {
                 const area = (op === "EXPORTACION") ? "del carril de excesos a la exportación" : "de la Puerta Caracol";
                 cuerpo += "El presente correo es para solicitar la apertura " + area + " para el retorno al vehículo con las placas siguientes:\n\n" +
-                          "PLACAS: " + placasVal + "\n" +
+                          "PLACAS: " + placasVal + "\n\n" +
                           "TIPO DE RETORNO: " + tipoText + "\n\n" +
                           "Gracias.\n\nSaludos cordiales,\n" + operadorVal + "\nMódulos ANAM Altamira";
             }
