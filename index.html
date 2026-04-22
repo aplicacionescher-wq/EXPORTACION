@@ -205,7 +205,9 @@
             subjectGlobal = subject;
             cuerpoGlobal = cuerpo;
             
+            // ACCESO DIRECTO PARA IOS
             outlookUrlGlobal = `ms-outlook://compose?to=${to}&subject=${encodeURIComponent(subject)}&body=${encodeURIComponent(cuerpo)}`;
+            // ACCESO DIRECTO PARA ESCRITORIO / OTROS
             mailtoGlobal = `mailto:${to}?subject=${encodeURIComponent(subject)}&body=${encodeURIComponent(cuerpo)}`;
 
             document.getElementById("modal").style.display="flex";
@@ -218,34 +220,33 @@
             },1000);
         });
 
-        /* ===== ACCIONES DEL MODAL ACTUALIZADAS ===== */
+        /* ===== LÓGICA DEL ACCESO DIRECTO ===== */
 
         window.abrirOutlook = function() {
             const isIOS = /iPhone|iPad|iPod/i.test(navigator.userAgent);
             const isAndroid = /Android/i.test(navigator.userAgent);
             const start = Date.now();
 
-            // Sistema de Fallback: Si en 2.5s no se abre la App, usa mailto
+            // Si la App no responde en 2.5s, se asume que no está instalada y se usa mailto
             const fallback = setTimeout(() => {
                 if (Date.now() - start < 3000) {
-                    console.log("Outlook App no detectada, recurriendo a mailto...");
                     window.location.href = mailtoGlobal;
                 }
             }, 2500);
 
             if (isIOS) {
-                // Esquema directo para iOS
+                // Acceso directo iOS (ms-outlook://)
                 window.location.href = outlookUrlGlobal;
             } else if (isAndroid) {
-                // Intent para forzar Outlook en Android (com.microsoft.office.outlook)
+                // Acceso directo Android (intent:// forzando el paquete de Outlook)
                 const intentUrl = `intent://compose?to=${encodeURIComponent(correosGlobal)}&subject=${encodeURIComponent(subjectGlobal)}&body=${encodeURIComponent(cuerpoGlobal)}#Intent;scheme=ms-outlook;package=com.microsoft.office.outlook;end`;
                 window.location.href = intentUrl;
             } else {
-                // Desktop
+                // Fallback para PC
                 window.location.href = mailtoGlobal;
             }
 
-            // Si la aplicación se abre, el navegador pierde el foco y cancelamos el fallback
+            // Si el usuario cambia a la app de Outlook, cancelamos el fallback
             window.onblur = () => clearTimeout(fallback);
         };
 
@@ -261,8 +262,6 @@
         window.cerrarModal = function() {
             document.getElementById("modal").style.display = "none";
         };
-
-        /* ===== HISTORIAL Y EXCEL ===== */
 
         window.consultarPlacas=async function(){
             const snap=await get(ref(db,"retornos"));
