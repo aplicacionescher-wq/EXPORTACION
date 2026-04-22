@@ -103,7 +103,7 @@
                 <textarea id="mercancia" placeholder="Detalle la mercancía"></textarea>
             </div>
 
-            <button type="submit" id="btnGenerar" class="btn-main" disabled>Generar y Abrir Outlook</button>
+            <button type="submit" id="btnGenerar" class="btn-main" disabled>Generar y Enviar</button>
 
             <hr style="margin: 30px 0; border: 0; border-top: 1px solid #ddd;">
 
@@ -118,14 +118,13 @@
 
     <div class="footer">© 2026 Agencia Nacional de Aduanas de México</div>
 
-    <!-- MODAL -->
     <div id="modal" class="modal">
         <div class="modal-content">
             <h2>Enviar correo</h2>
-            <p>Selecciona una opción</p>
-            <button class="btn-outlook" onclick="abrirOutlook()">Abrir en Outlook</button>
-            <button class="btn-mail" onclick="abrirCorreoNormal()">Abrir correo normal</button>
-            <button class="btn-copy" onclick="copiarCorreo()">Copiar correo</button>
+            <p>Selecciona la opción para abrir Outlook</p>
+            <button class="btn-outlook" onclick="abrirOutlook()">Abrir en Outlook (App)</button>
+            <button class="btn-mail" onclick="abrirCorreoNormal()">Abrir correo predeterminado</button>
+            <button class="btn-copy" onclick="copiarCorreo()">Copiar texto del cuerpo</button>
             <button class="btn-close" onclick="cerrarModal()">Cerrar</button>
         </div>
     </div>
@@ -155,9 +154,12 @@
         const correosBase = ["juan.reyesg@anam.gob.mx","vyc.altamira@anam.gob.mx","alejandra.munoz@anam.gob.mx","jorge.silva@anam.gob.mx","abraham.gomez@anam.gob.mx","daniel.santosh@anam.gob.mx","christian.monrreal@anam.gob.mx","monica.becerra@anam.gob.mx","anahi.santiago@anam.gob.mx"];
         const correosExtra = ["emilio.garin@anam.gob.mx","sergio.diazr@anam.gob.mx","oscar.narro@anam.gob.mx"];
 
-        let outlookUrlGlobal="";
-        let mailtoGlobal="";
-        let cuerpoGlobal="";
+        // Variables Globales para los enlaces
+        let correosGlobal = "";
+        let subjectGlobal = "";
+        let cuerpoGlobal = "";
+        let outlookUrlGlobal = "";
+        let mailtoGlobal = "";
 
         function actualizarReloj(){ document.getElementById("fechaHora").textContent=new Date().toLocaleString(); }
         setInterval(actualizarReloj,1000); actualizarReloj();
@@ -195,15 +197,20 @@
                 cuerpo+="El presente correo es para solicitar la apertura "+area+" para el retorno al vehículo con las placas siguientes:\n\nPLACAS:\n"+placasVal+"\n\nTipo de retorno:\n"+tipo.options[tipo.selectedIndex].text+"\n\nGracias.\n\nSaludos cordiales,\n"+operadorVal+"\nMódulos\nANAM Altamira";
             }
 
+            // Guardar en Firebase
             await push(ref(db,"retornos"),{folio:folioFinal,fecha:hoy.toISOString(),operador:operadorVal,placas:placasVal,tipo:tipo.value});
 
             const to=(tipo.value==="revision")?correosBase.concat(correosExtra).join(","):correosBase.join(",");
-            const subject=encodeURIComponent(`${op} - ${tipo.options[tipo.selectedIndex].text}`);
-            const body=encodeURIComponent(cuerpo);
-
-            outlookUrlGlobal=`ms-outlook://compose?to=${to}&subject=${subject}&body=${body}`;
-            mailtoGlobal=`mailto:${to}?subject=${subject}&body=${body}`;
-            cuerpoGlobal=cuerpo;
+            const subject=`${op} - ${tipo.options[tipo.selectedIndex].text}`;
+            
+            // Asignar a globales
+            correosGlobal = to;
+            subjectGlobal = subject;
+            cuerpoGlobal = cuerpo;
+            
+            // Generar Enlaces
+            outlookUrlGlobal = `ms-outlook://compose?to=${to}&subject=${encodeURIComponent(subject)}&body=${encodeURIComponent(cuerpo)}`;
+            mailtoGlobal = `mailto:${to}?subject=${encodeURIComponent(subject)}&body=${encodeURIComponent(cuerpo)}`;
 
             document.getElementById("modal").style.display="flex";
 
@@ -215,51 +222,38 @@
             },1000);
         });
 
-        window.abrirOutlook=function(){
-            const isIOS=/iPhone|iPad|iPod/i.test(navigator.userAgent);
-            const isAndroid=/Android/i.test(navigator.userAgent);
+        /* ===== ACCIONES DEL MODAL ===== */
 
-            if(isIOS){
-                const iframe=document.createElement("iframe");
-                iframe.style.display="none";
-                iframe.src=outlookUrlGlobal;
-                document.body.appendChild(iframe);
-            }else if(isAndroid){
-                const intent=`intent://compose#Intent;scheme=ms-outlook;package=com.microsoft.office.outlook;end`;
-                window.location.href=intent;
+        window.abrirOutlook = function() {
+            const isIOS = /iPhone|iPad|iPod/i.test(navigator.userAgent);
+            const isAndroid = /Android/i.test(navigator.userAgent);
+
+            if (isIOS) {
+                // Esquema directo para iOS
+                window.location.href = outlookUrlGlobal;
+            } else if (isAndroid) {
+                // Intent para forzar Outlook en Android
+                const intentUrl = `intent://compose?to=${encodeURIComponent(correosGlobal)}&subject=${encodeURIComponent(subjectGlobal)}&body=${encodeURIComponent(cuerpoGlobal)}#Intent;scheme=ms-outlook;package=com.microsoft.office.outlook;end`;
+                window.location.href = intentUrl;
+            } else {
+                // Desktop o Fallback
+                window.location.href = mailtoGlobal;
             }
-        }
+        };
 
-/* ===== ACCIONES ===== */
-window.abrirOutlook = function(){
- const isApp = !!window.Capacitor;
- if(isApp){
-   window.open(outlookUrlGlobal, "_system");
-  }else{
-    // En navegador, no forzar esquema → usar mailto
-   window.location.href = mailtoGlobal;
- }
-};
-           
-        window.abrirCorreoNormal=function(){ window.location.href=mailtoGlobal; }
+        window.abrirCorreoNormal = function() {
+            window.location.href = mailtoGlobal;
+        };
 
-        window.copiarCorreo=function(){
+        window.copiarCorreo = function() {
             navigator.clipboard.writeText(cuerpoGlobal);
-            alert("Correo copiado correctamente");
-        }
+            alert("Cuerpo del correo copiado.");
+        };
 
- //      window.cerrarModal=function(){ document.getElementById("modal").style.display="none"; }
+        window.cerrarModal = function() {
+            document.getElementById("modal").style.display = "none";
+        };
 
-window.cerrarModal = function(){
-  document.getElementById("modal").style.display="none";
-};
-      
-
-window.abrirCorreoNormal = function(){
- window.location.href = mailtoGlobal;
-};
-
-      
         window.consultarPlacas=async function(){
             const snap=await get(ref(db,"retornos"));
             const fecha=document.getElementById("fechaConsulta").value;
