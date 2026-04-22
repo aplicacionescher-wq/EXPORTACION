@@ -55,7 +55,6 @@
         .modal-content { background: #fff; padding: 25px; border-radius: 15px; width: 100%; max-width: 400px; text-align: center; }
         .modal h2 { color: #611232; margin-top: 0; font-size: 20px; }
         
-        /* El enlace disfrazado de botón es la clave */
         .link-button { 
             display: block; text-decoration: none; background: #0078D4; color: white; 
             padding: 16px; border-radius: 8px; font-weight: bold; margin-top: 12px; font-size: 15px;
@@ -101,12 +100,15 @@
                 <textarea id="mercancia" placeholder="Detalle de la carga sobredimensionada"></textarea>
             </div>
 
-            <button type="submit" id="btnGenerar" class="btn-main" disabled>Generar Correo</button>
+            <button type="submit" id="btnGenerar" class="btn-main" disabled>GENERAR CORREO</button>
 
             <hr style="margin: 30px 0; border: 0; border-top: 1px solid #ddd;">
+            
+            <label>Historial de Registros</label>
             <input type="date" id="fechaConsulta">
-            <button type="button" onclick="consultarPlacas()" class="btn-query">CONSULTAR REGISTROS</button>
-            <button type="button" onclick="exportarExcel()" class="btn-query">EXPORTAR EXCEL</button>
+            <button type="button" id="btnConsultar" class="btn-query">CONSULTAR REGISTROS</button>
+            <button type="button" id="btnExportar" class="btn-query">EXPORTAR EXCEL</button>
+            
             <div id="tablaResultados" style="overflow-x:auto;"></div>
         </form>
     </div>
@@ -114,12 +116,12 @@
     <div id="modal" class="modal">
         <div class="modal-content">
             <h2 id="modalTitle">Folio Generado</h2>
-            <p>El folio se guardó en el sistema. Toca el botón azul para abrir Outlook:</p>
+            <p>Datos guardados. Toca para abrir Outlook:</p>
             
             <a id="btnOutlookReal" class="link-button" href="#">ABRIR EN OUTLOOK</a>
             
-            <button class="btn-copy" onclick="copiarCuerpo()">COPIAR TEXTO (Manual)</button>
-            <button class="btn-close" onclick="cerrarModal()">CERRAR</button>
+            <button class="btn-copy" id="btnCopiar">COPIAR TEXTO (Manual)</button>
+            <button class="btn-close" id="btnCerrarModal">LIMPIAR Y CERRAR</button>
         </div>
     </div>
 
@@ -144,13 +146,17 @@
         const tipoSelect = document.getElementById("tipo");
         const mercanciaDiv = document.getElementById("mercanciaDiv");
         const btnGenerar = document.getElementById("btnGenerar");
+        const fechaConsultaInput = document.getElementById("fechaConsulta");
         
-        window.cuerpoActual = "";
+        let cuerpoActual = "";
+        const hoyStr = new Date().toISOString().split("T")[0];
+        fechaConsultaInput.value = hoyStr;
 
         const correosBase = "juan.reyesg@anam.gob.mx,vyc.altamira@anam.gob.mx,alejandra.munoz@anam.gob.mx,jorge.silva@anam.gob.mx,abraham.gomez@anam.gob.mx,daniel.santosh@anam.gob.mx,christian.monrreal@anam.gob.mx,monica.becerra@anam.gob.mx,anahi.santiago@anam.gob.mx";
         const correosExtra = ",emilio.garin@anam.gob.mx,sergio.diazr@anam.gob.mx,oscar.narro@anam.gob.mx";
 
         setInterval(() => { document.getElementById("fechaHora").textContent = new Date().toLocaleString(); }, 1000);
+
         form.addEventListener("input", () => { btnGenerar.disabled = !form.checkValidity(); });
         
         tipoSelect.addEventListener("change", () => {
@@ -166,6 +172,7 @@
             const hoy = new Date();
             const idFecha = hoy.getFullYear() + ("0" + (hoy.getMonth() + 1)).slice(-2) + ("0" + hoy.getDate()).slice(-2);
             const refCont = ref(db, 'contadorFolios/' + idFecha);
+            
             const res = await runTransaction(refCont, (c) => (c || 0) + 1);
             const folioFinal = `RET-${idFecha}-${res.snapshot.val().toString().padStart(3, "0")}`;
             document.getElementById("folio").textContent = folioFinal;
@@ -181,7 +188,7 @@
             if(tipoSelect.value === "revision"){
                 cuerpo += "Por medio del presente, se solicita el valioso apoyo de la Subdirección de Vigilancia y Control para realizar la apertura del carril de excesos de exportación. Lo anterior, con la finalidad de permitir el ingreso y posicionamiento de la unidad con exceso de dimensiones en la explanada de vacíos.\n\n" +
                           "Se les solicita de la manera más atenta confirmar en cuanto la unidad se encuentre debidamente posicionada.\n\n" +
-                          "PLACAS: " + placasVal + "\n" +
+                          "PLACAS: " + placasVal + "\n\n" +
                           "MERCANCÍA: " + mercaVal + "\n\n" +
                           "Posteriormente, la unidad será inspeccionada por el equipo ZBV del Departamento de Equipos No Intrusivos en la explanada de vacíos de importación.\n\n" +
                           "De igual forma, se solicita dar aviso al personal del módulo una vez que la unidad haya sido revisada, así como responder a este correo electrónico al concluir la inspección.\n\n" +
@@ -195,57 +202,83 @@
                           "Gracias.\n\nSaludos cordiales,\n" + operadorVal + "\nMódulos ANAM Altamira";
             }
 
-            window.cuerpoActual = cuerpo;
-            await push(ref(db, "retornos"), { folio: folioFinal, fecha: hoy.toISOString(), operador: operadorVal, placas: placasVal, tipo: tipoSelect.value });
+            cuerpoActual = cuerpo;
+            await push(ref(db, "retornos"), { 
+                folio: folioFinal, 
+                fecha: hoy.toISOString(), 
+                operador: operadorVal, 
+                placas: placasVal, 
+                tipo: tipoSelect.value,
+                operacion: op
+            });
 
-            // CONFIGURACIÓN DEL ENLACE DE OUTLOOK
             const to = (tipoSelect.value === "revision") ? correosBase + correosExtra : correosBase;
             const subject = `${op} - ${tipoText}`;
-            
-            // mailto es el estándar que entiende la App instalada de Outlook en iPhone y Android
             const mailtoUrl = `mailto:${to}?subject=${encodeURIComponent(subject)}&body=${encodeURIComponent(cuerpo)}`;
             
-            // Actualizamos el botón del modal con este enlace
-            const btnOutlook = document.getElementById("btnOutlookReal");
-            btnOutlook.href = mailtoUrl;
-
+            document.getElementById("btnOutlookReal").href = mailtoUrl;
             document.getElementById("modalTitle").textContent = "Folio: " + folioFinal;
             document.getElementById("modal").style.display = "flex";
         });
 
-        window.copiarCuerpo = function() {
-            navigator.clipboard.writeText(window.cuerpoActual).then(() => {
-                alert("Cuerpo del correo copiado. Si la app no abre sola, pégalo manualmente.");
-            });
-        };
-
-        window.cerrarModal = function() {
+        // FUNCIÓN: LIMPIAR Y CERRAR
+        document.getElementById("btnCerrarModal").onclick = () => {
             document.getElementById("modal").style.display = "none";
-            form.reset();
+            form.reset(); // LIMPIA TODO EL FORMULARIO
             document.getElementById("folio").textContent = "--";
             mercanciaDiv.classList.add("hidden");
             btnGenerar.disabled = true;
+            fechaConsultaInput.value = hoyStr; // Mantiene la fecha de hoy en la consulta
         };
 
-        window.consultarPlacas = async function(){
-            const snap = await get(ref(db, "retornos"));
-            const fecha = document.getElementById("fechaConsulta").value;
-            let html = "<table><tr><th>Operador</th><th>Placas</th></tr>";
-            snap.forEach(d => {
-                const v = d.val();
-                if(v.fecha.startsWith(fecha)) html += `<tr><td>${v.operador}</td><td>${v.placas}</td></tr>`;
-            });
-            document.getElementById("tablaResultados").innerHTML = html + "</table>";
+        // FUNCIÓN: COPIAR
+        document.getElementById("btnCopiar").onclick = () => {
+            navigator.clipboard.writeText(cuerpoActual).then(() => alert("Copiado al portapapeles."));
         };
 
-        window.exportarExcel = async function(){
+        // FUNCIÓN: CONSULTAR REGISTROS
+        document.getElementById("btnConsultar").onclick = async () => {
             const snap = await get(ref(db, "retornos"));
-            let data = []; snap.forEach(d => data.push(d.val()));
+            const fechaBuscada = fechaConsultaInput.value;
+            let html = "<table><tr><th>Hora</th><th>Folio</th><th>Operador</th><th>Placas</th></tr>";
+            let contador = 0;
+
+            if (snap.exists()) {
+                snap.forEach(d => {
+                    const v = d.val();
+                    // Comprobamos si la fecha del registro coincide con la seleccionada
+                    if (v.fecha && v.fecha.startsWith(fechaBuscada)) {
+                        const hora = new Date(v.fecha).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' });
+                        html += `<tr>
+                            <td>${hora}</td>
+                            <td>${v.folio || 'N/A'}</td>
+                            <td>${v.operador}</td>
+                            <td>${v.placas}</td>
+                        </tr>`;
+                        contador++;
+                    }
+                });
+            }
+
+            if (contador === 0) {
+                document.getElementById("tablaResultados").innerHTML = "<p style='text-align:center; font-size:12px; color:red;'>No hay registros en esta fecha.</p>";
+            } else {
+                document.getElementById("tablaResultados").innerHTML = html + "</table>";
+            }
+        };
+
+        // FUNCIÓN: EXPORTAR EXCEL
+        document.getElementById("btnExportar").onclick = async () => {
+            const snap = await get(ref(db, "retornos"));
+            let data = [];
+            snap.forEach(d => data.push(d.val()));
+            if(data.length === 0) return alert("No hay datos para exportar");
             const ws = XLSX.utils.json_to_sheet(data);
             const wb = XLSX.utils.book_new();
             XLSX.utils.book_append_sheet(wb, ws, "Registros");
-            XLSX.writeFile(wb, "Reporte_ANAM.xlsx");
+            XLSX.writeFile(wb, "Reporte_Retornos_Altamira.xlsx");
         };
+
     </script>
 </body>
 </html>
