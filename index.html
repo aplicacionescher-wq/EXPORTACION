@@ -215,47 +215,41 @@
             },1000);
         });
 
-        /* ===== SOLUCIÓN AL ERROR DE REDIRECCIÓN ===== */
+        /* ===== LÓGICA DE APERTURA PARA MÓVILES (OUTLOOK) ===== */
 
         window.abrirOutlook = function() {
-            const isIOS = /iPhone|iPad|iPod/i.test(navigator.userAgent);
-            const isAndroid = /Android/i.test(navigator.userAgent);
-            
-            const to = encodeURIComponent(correosGlobal);
+            const to = correosGlobal;
             const sub = encodeURIComponent(subjectGlobal);
             const body = encodeURIComponent(cuerpoGlobal);
 
-            let targetUrl = "";
+            const isIOS = /iPhone|iPad|iPod/i.test(navigator.userAgent);
+            const isAndroid = /Android/i.test(navigator.userAgent);
 
-            if (isIOS) {
-                // Esquema exclusivo de Outlook para iOS
-                targetUrl = `ms-outlook://compose?to=${to}&subject=${sub}&body=${body}`;
-            } else if (isAndroid) {
-                // Intent específico de Android que fuerza la App de Outlook
-                targetUrl = `intent://compose?to=${to}&subject=${sub}&body=${body}#Intent;scheme=ms-outlook;package=com.microsoft.office.outlook;end`;
-            } else {
-                // Fallback para PC
-                targetUrl = mailtoGlobal;
+            if (isAndroid) {
+                // Formato "Intent" oficial para Android (Chrome)
+                // Esto fuerza al sistema a buscar la app com.microsoft.office.outlook
+                const intentUrl = `intent://compose?to=${to}&subject=${sub}&body=${body}#Intent;scheme=ms-outlook;package=com.microsoft.office.outlook;end`;
+                window.location.href = intentUrl;
+            } 
+            else if (isIOS) {
+                // En iOS/iPhone el esquema ms-outlook:// debe abrirse como una nueva ventana
+                // para que Safari no bloquee la redirección
+                const outlookUrl = `ms-outlook://compose?to=${to}&subject=${sub}&body=${body}`;
+                window.open(outlookUrl, '_blank');
+                
+                // Fallback por si la App no está instalada
+                setTimeout(() => {
+                    window.location.href = mailtoGlobal;
+                }, 1500);
+            } 
+            else {
+                // Computadora
+                window.location.href = mailtoGlobal;
             }
-
-            // CREACIÓN DE ENLACE TEMPORAL (Evita el "Error de Redirección")
-            // Los navegadores confían más en un click simulado en un elemento <a> que en window.location
-            const tempLink = document.createElement('a');
-            tempLink.href = targetUrl;
-            tempLink.style.display = 'none';
-            document.body.appendChild(tempLink);
-            tempLink.click();
-            
-            // Limpieza después de 100ms
-            setTimeout(() => {
-                document.body.removeChild(tempLink);
-            }, 100);
         };
 
         window.abrirCorreoNormal = function() {
-            const tempLink = document.createElement('a');
-            tempLink.href = mailtoGlobal;
-            tempLink.click();
+            window.location.href = mailtoGlobal;
         };
 
         window.copiarCorreo = function() {
