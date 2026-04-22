@@ -203,7 +203,6 @@
             subjectGlobal = subject;
             cuerpoGlobal = cuerpo;
             
-            // Mailto estándar para el botón "Correo predeterminado"
             mailtoGlobal = `mailto:${to}?subject=${encodeURIComponent(subject)}&body=${encodeURIComponent(cuerpo)}`;
 
             document.getElementById("modal").style.display="flex";
@@ -216,7 +215,7 @@
             },1000);
         });
 
-        /* ===== ACCESO DIRECTO FORZADO A OUTLOOK ===== */
+        /* ===== SOLUCIÓN AL ERROR DE REDIRECCIÓN ===== */
 
         window.abrirOutlook = function() {
             const isIOS = /iPhone|iPad|iPod/i.test(navigator.userAgent);
@@ -226,23 +225,37 @@
             const sub = encodeURIComponent(subjectGlobal);
             const body = encodeURIComponent(cuerpoGlobal);
 
+            let targetUrl = "";
+
             if (isIOS) {
-                // En iOS, ms-outlook:// es el esquema único que ignora la configuración predeterminada
-                // Se construye de forma que la app lo intercepte directamente.
-                const iosUrl = `ms-outlook://compose?to=${to}&subject=${sub}&body=${body}`;
-                window.location.replace(iosUrl);
+                // Esquema exclusivo de Outlook para iOS
+                targetUrl = `ms-outlook://compose?to=${to}&subject=${sub}&body=${body}`;
             } else if (isAndroid) {
-                // En Android, el Intent con el paquete forzado nunca fallará si la app está instalada.
-                const androidIntent = `intent://compose?to=${to}&subject=${sub}&body=${body}#Intent;scheme=ms-outlook;package=com.microsoft.office.outlook;end`;
-                window.location.href = androidIntent;
+                // Intent específico de Android que fuerza la App de Outlook
+                targetUrl = `intent://compose?to=${to}&subject=${sub}&body=${body}#Intent;scheme=ms-outlook;package=com.microsoft.office.outlook;end`;
             } else {
-                // Si es PC, intentamos abrir el mailto (Outlook suele capturarlo si está instalado)
-                window.location.href = mailtoGlobal;
+                // Fallback para PC
+                targetUrl = mailtoGlobal;
             }
+
+            // CREACIÓN DE ENLACE TEMPORAL (Evita el "Error de Redirección")
+            // Los navegadores confían más en un click simulado en un elemento <a> que en window.location
+            const tempLink = document.createElement('a');
+            tempLink.href = targetUrl;
+            tempLink.style.display = 'none';
+            document.body.appendChild(tempLink);
+            tempLink.click();
+            
+            // Limpieza después de 100ms
+            setTimeout(() => {
+                document.body.removeChild(tempLink);
+            }, 100);
         };
 
         window.abrirCorreoNormal = function() {
-            window.location.href = mailtoGlobal;
+            const tempLink = document.createElement('a');
+            tempLink.href = mailtoGlobal;
+            tempLink.click();
         };
 
         window.copiarCorreo = function() {
