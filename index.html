@@ -218,36 +218,38 @@
       //      setTimeout(()=>{ window.location.href=mailtoGlobal; },1500);
       //  }
 
-      window.abrirOutlook = function () {
+  window.abrirOutlook = function () {
+
     const isIOS = /iPhone|iPad|iPod/i.test(navigator.userAgent);
-    let appAbierta = false;
-
-    // Detecta si saliste del navegador (se abrió la app)
-    const onVisibilityChange = () => {
-        if (document.visibilityState === "hidden") {
-            appAbierta = true;
-        }
-    };
-
-    document.addEventListener("visibilitychange", onVisibilityChange, { once: true });
+    const isAndroid = /Android/i.test(navigator.userAgent);
 
     if (isIOS) {
-        // iOS: usar iframe evita el error de Safari
+        // iOS → iframe (evita error Safari)
         const iframe = document.createElement("iframe");
         iframe.style.display = "none";
         iframe.src = outlookUrlGlobal;
         document.body.appendChild(iframe);
-    } else {
-        // Android: navegación normal
-        window.location.href = outlookUrlGlobal;
-    }
 
-    // Fallback SOLO si no se abrió Outlook
-    setTimeout(() => {
-        if (!appAbierta) {
+        // fallback limpio
+        setTimeout(() => {
             window.location.href = mailtoGlobal;
-        }
-    }, 1500);
+        }, 1800);
+
+    } else if (isAndroid) {
+        // ANDROID → usar INTENT (esto elimina el error de redirección)
+        const intentUrl = `intent://compose?to=${encodeURIComponent(correosBase.join(","))}#Intent;scheme=ms-outlook;package=com.microsoft.office.outlook;end`;
+
+        window.location.href = intentUrl;
+
+        // fallback solo si no abre
+        setTimeout(() => {
+            window.location.href = mailtoGlobal;
+        }, 1800);
+
+    } else {
+        // PC o navegador normal
+        window.location.href = mailtoGlobal;
+    }
 };
         
 
