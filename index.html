@@ -10,189 +10,184 @@
     <script src="https://cdn.jsdelivr.net/npm/xlsx/dist/xlsx.full.min.js"></script>
 
     <style>
-        body {
-            margin: 0;
-            font-family: Arial, Helvetica, sans-serif;
-            background: #F4F4F4;
-            color: #161A1D;
+        /* Base del documento */
+        body { 
+            margin: 0; 
+            font-family: Arial, Helvetica, sans-serif; 
+            background: #F4F4F4; 
+            color: #161A1D; 
         }
 
-        .top-bar {
-            background: #611232;
-            color: #fff;
-            padding: 10px 15px;
-            font-size: 13px;
-            font-weight: bold;
-            text-align: center;
+        /* Barra superior institucional */
+        .top-bar { 
+            background: #611232; 
+            color: #fff; 
+            padding: 10px 15px; 
+            font-size: 13px; 
+            font-weight: bold; 
+            text-align: center; 
         }
 
-        .container {
-            position: relative;
-            background: #ffffffee;
-            max-width: 720px;
-            margin: 70px auto 20px;
-            padding: 40px 25px 30px;
-            border-radius: 14px;
-            box-shadow: 0 10px 25px rgba(0,0,0,0.1);
-            border-top: 8px solid #1E5B4F;
-            overflow: hidden;
+        /* Contenedor principal */
+        .container { 
+            position: relative; 
+            background: #ffffffee; 
+            max-width: 720px; 
+            margin: 70px auto 20px; 
+            padding: 40px 25px 30px; 
+            border-radius: 14px; 
+            box-shadow: 0 10px 25px rgba(0,0,0,0.1); 
+            border-top: 8px solid #1E5B4F; 
+            overflow: hidden; 
         }
 
-        .container::before {
-            content: "";
-            position: absolute;
-            inset: 0;
-            background: url("logo-anam.png") center center no-repeat;
-            background-size: 280px;
-            opacity: 0.05;
-            pointer-events: none;
+        /* Logo de fondo (Marca de agua) */
+        .container::before { 
+            content: ""; 
+            position: absolute; 
+            inset: 0; 
+            background: url("logo-anam.png") center center no-repeat; 
+            background-size: 280px; 
+            opacity: 0.05; 
+            pointer-events: none; 
         }
 
-        .logo-gota {
-            position: absolute;
-            top: -40px;
-            left: 50%;
-            transform: translateX(-50%);
-            width: 85px;
-            height: 85px;
-            border-radius: 50%;
-            display: flex;
-            justify-content: center;
-            align-items: center;
-            backdrop-filter: blur(10px);
-            background: rgba(255,255,255,0.7);
-            box-shadow: 0 8px 18px rgba(0,0,0,0.2);
-            border: 3px solid #A57F2C;
-            z-index: 2;
+        /* Logo flotante (Gota) */
+        .logo-gota { 
+            position: absolute; 
+            top: -40px; 
+            left: 50%; 
+            transform: translateX(-50%); 
+            width: 85px; 
+            height: 85px; 
+            border-radius: 50%; 
+            display: flex; 
+            justify-content: center; 
+            align-items: center; 
+            backdrop-filter: blur(10px); 
+            background: rgba(255,255,255,0.7); 
+            box-shadow: 0 8px 18px rgba(0,0,0,0.2); 
+            border: 3px solid #A57F2C; 
+            z-index: 2; 
         }
 
         .logo-gota img { width: 65px; }
 
-        .title {
-            text-align: center;
-            color: #611232;
-            font-size: 18px;
-            font-weight: bold;
-            margin: 15px 0;
+        .title { 
+            text-align: center; 
+            color: #611232; 
+            font-size: 18px; 
+            font-weight: bold; 
+            margin: 15px 0; 
         }
 
-        h3 {
-            color: #611232;
-            border-bottom: 2px solid #A57F2C;
-            padding-bottom: 6px;
-            font-size: 15px;
+        h3 { 
+            color: #611232; 
+            border-bottom: 2px solid #A57F2C; 
+            padding-bottom: 6px; 
+            font-size: 15px; 
         }
 
-        label { font-weight: bold; font-size: 14px; }
-
-        select, input, textarea {
-            width: 100%;
-            padding: 9px;
-            margin: 6px 0 14px;
-            border-radius: 6px;
-            border: 1px solid #ccc;
-            font-size: 14px;
-            box-sizing: border-box;
+        /* Formulario y controles */
+        label { 
+            font-weight: bold; 
+            font-size: 14px; 
+            display: block; 
+            margin-top: 10px; 
         }
 
-        #placas { text-transform: uppercase; }
+        select, input, textarea { 
+            width: 100%; 
+            padding: 10px; 
+            margin: 6px 0 14px; 
+            border-radius: 6px; 
+            border: 1px solid #ccc; 
+            font-size: 14px; 
+            box-sizing: border-box; 
+        }
 
-        button {
-            background: #1E5B4F;
-            color: #fff;
-            padding: 10px;
-            border: none;
-            width: 100%;
-            border-radius: 6px;
-            font-size: 14px;
-            cursor: pointer;
-            font-weight: bold;
-            margin-top: 6px;
+        #placas { text-transform: uppercase; font-family: monospace; }
+
+        /* Botones */
+        button { 
+            background: #1E5B4F; 
+            color: #fff; 
+            padding: 12px; 
+            border: none; 
+            width: 100%; 
+            border-radius: 6px; 
+            font-size: 14px; 
+            cursor: pointer; 
+            font-weight: bold; 
+            margin-top: 6px; 
+            transition: 0.3s; 
         }
 
         button:hover { opacity: 0.9; }
 
-        button:disabled {
-            background: #999;
-            cursor: not-allowed;
-            opacity: 0.6;
+        button:disabled { 
+            background: #999; 
+            cursor: not-allowed; 
+            opacity: 0.6; 
         }
 
         .hidden { display: none; }
 
-        .modal {
-            display: none;
-            position: fixed;
-            inset: 0;
-            background: rgba(0,0,0,.5);
-            justify-content: center;
-            align-items: center;
-            z-index: 1000;
+        /* Modal Outlook */
+        .modal { 
+            display: none; 
+            position: fixed; 
+            inset: 0; 
+            background: rgba(0,0,0,.6); 
+            justify-content: center; 
+            align-items: center; 
+            z-index: 1000; 
         }
 
-        .modal-content {
-            background: #fff;
-            padding: 25px;
-            border-radius: 12px;
-            width: 320px;
-            text-align: center;
-            border-top: 6px solid #0078d4;
+        .modal-content { 
+            background: #fff; 
+            padding: 30px; 
+            border-radius: 12px; 
+            width: 320px; 
+            text-align: center; 
+            border-top: 6px solid #0078d4; 
         }
 
-        .btn-outlook {
-            background: #0078d4;
-            color: white;
-            padding: 15px;
-            width: 100%;
-            border-radius: 6px;
-            border: none;
-            font-weight: bold;
-            cursor: pointer;
-            margin-top: 15px;
+        .btn-outlook { 
+            background: #0078d4; 
+            color: white; 
+            padding: 15px; 
+            width: 100%; 
+            border-radius: 6px; 
+            border: none; 
+            font-weight: bold; 
+            cursor: pointer; 
+            margin-top: 15px; 
         }
 
-        table {
-            width: 100%;
-            border-collapse: collapse;
-            margin-top: 15px;
-        }
+        /* Tabla de resultados */
+        table { width: 100%; border-collapse: collapse; margin-top: 15px; }
+        th, td { border: 1px solid #ccc; padding: 8px; font-size: 12px; text-align: center; }
+        th { background: #611232; color: #fff; }
 
-        th, td {
-            border: 1px solid #ccc;
-            padding: 6px;
-            font-size: 12px;
-            text-align: center;
-        }
-
-        th {
-            background: #611232;
-            color: #fff;
-        }
-
-        .footer {
-            text-align: center;
-            font-size: 11px;
-            color: #98989A;
-            margin: 20px 0;
+        .footer { 
+            text-align: center; 
+            font-size: 11px; 
+            color: #98989A; 
+            margin: 20px 0; 
         }
     </style>
 </head>
 
 <body>
 
-    <div class="top-bar">
-        Gobierno de México | Agencia Nacional de Aduanas de México
-    </div>
+    <div class="top-bar">Gobierno de México | Agencia Nacional de Aduanas de México</div>
 
     <div class="container">
-        <div class="logo-gota">
-            <img src="logo-anam2.png" alt="Logo">
-        </div>
-
+        <div class="logo-gota"><img src="logo-anam2.png" alt="ANAM"></div>
         <div class="title">Solicitud de Retornos Módulos</div>
 
         <h3>Generador de Solicitudes</h3>
-
         <p><strong>Folio:</strong> <span id="folio">--</span></p>
         <p><strong>Fecha:</strong> <span id="fechaHora"></span></p>
 
@@ -220,37 +215,36 @@
 
             <div id="mercanciaDiv" class="hidden">
                 <label>Descripción de la Mercancía</label>
-                <textarea id="mercancia"></textarea>
+                <textarea id="mercancia" placeholder="Detalle la mercancía sobre-dimensionada"></textarea>
             </div>
 
-            <button type="submit" id="btnGenerar" disabled>Generar Correo</button>
+            <button type="submit" id="btnGenerar" disabled>GENERAR CORREO</button>
 
-            <hr style="margin: 20px 0; border: 0; border-top: 1px solid #ccc;">
+            <hr style="margin: 30px 0; border: 0; border-top: 1px solid #ddd;">
 
-            <label>Seleccionar fecha (opcional)</label>
+            <label>Consulta por Fecha</label>
             <input type="date" id="fechaConsulta">
-
-            <button type="button" onclick="consultarPlacas()">Consultar Placas</button>
-            <button type="button" onclick="exportarExcel()" style="background:#A57F2C;">Exportar a Excel</button>
+            
+            <button type="button" onclick="consultarPlacas()" style="background:#611232;">CONSULTAR PLACAS</button>
+            <button type="button" onclick="exportarExcel()" style="background:#611232;">EXPORTAR A EXCEL</button>
 
             <div id="tablaResultados"></div>
         </form>
     </div>
 
-    <div class="footer">
-        © 2026 Agencia Nacional de Aduanas de México
-    </div>
+    <div class="footer">© 2026 Agencia Nacional de Aduanas de México</div>
 
     <div id="selectorModal" class="modal">
         <div class="modal-content">
-            <h3 style="color:#0078d4; margin-top:0;">Enviar vía Outlook</h3>
-            <p style="font-size: 14px; color: #555;">La solicitud se registró con éxito. Haz clic abajo para abrir la App de Outlook.</p>
-            <button onclick="abrirAppOutlook()" class="btn-outlook">ABRIR EN OUTLOOK</button>
+            <h2 style="color:#0078d4; margin-top:0;">Outlook App</h2>
+            <p style="font-size: 14px; color: #555;">La solicitud se guardó correctamente. Presiona para enviar desde Outlook.</p>
+            <button onclick="enviarYLimpiarCaptura()" class="btn-outlook">ABRIR EN OUTLOOK</button>
             <button onclick="cerrarModal()" style="background:none; border:none; color:#999; margin-top:15px; cursor:pointer;">Cancelar</button>
         </div>
     </div>
 
     <script type="module">
+        // --- CONFIGURACIÓN FIREBASE ---
         import { initializeApp } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-app.js";
         import { getDatabase, ref, push, runTransaction, get } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-database.js";
 
@@ -267,157 +261,133 @@
         const app = initializeApp(firebaseConfig);
         const db = getDatabase(app);
 
+        // --- REFERENCIAS ELEMENTOS ---
         const form = document.getElementById("formRetorno");
         const tipo = document.getElementById("tipo");
         const mercanciaDiv = document.getElementById("mercanciaDiv");
-        const mercancia = document.getElementById("mercancia");
-        const placas = document.getElementById("placas");
-        const operacion = document.getElementById("operacion");
-        const operador = document.getElementById("operador");
         const modal = document.getElementById("selectorModal");
         const btnGenerar = document.getElementById("btnGenerar");
 
-        const listaCorreosBase = ["juan.reyesg@anam.gob.mx", "vyc.altamira@anam.gob.mx", "alejandra.munoz@anam.gob.mx", "jorge.silva@anam.gob.mx", "abraham.gomez@anam.gob.mx", "daniel.santosh@anam.gob.mx", "christian.monrreal@anam.gob.mx", "monica.becerra@anam.gob.mx", "anahi.santiago@anam.gob.mx"];
-        const correosExtrasRevision = ["emilio.garin@anam.gob.mx", "sergio.diazr@anam.gob.mx", "oscar.narro@anam.gob.mx"];
+        const correosBase = ["juan.reyesg@anam.gob.mx", "vyc.altamira@anam.gob.mx", "alejandra.munoz@anam.gob.mx", "jorge.silva@anam.gob.mx", "abraham.gomez@anam.gob.mx", "daniel.santosh@anam.gob.mx", "christian.monrreal@anam.gob.mx", "monica.becerra@anam.gob.mx", "anahi.santiago@anam.gob.mx"];
+        const correosExtra = ["emilio.garin@anam.gob.mx", "sergio.diazr@anam.gob.mx", "oscar.narro@anam.gob.mx"];
 
-        let tablaVisible = false;
-
-        function validarFormulario() {
-            btnGenerar.disabled = !form.checkValidity();
-        }
-
-        form.addEventListener("input", validarFormulario);
-
-        placas.addEventListener("input", () => {
-            placas.value = placas.value.toUpperCase();
-        });
-
-        tipo.addEventListener("change", () => {
-            if (tipo.value === "revision") {
-                mercanciaDiv.classList.remove("hidden");
-                mercancia.required = true;
-            } else {
-                mercanciaDiv.classList.add("hidden");
-                mercancia.required = false;
-                mercancia.value = "";
-            }
-            validarFormulario();
-        });
-
-        function actualizarFecha() {
-            document.getElementById("fechaHora").textContent = new Date().toLocaleString();
-        }
-        setInterval(actualizarFecha, 1000);
-        actualizarFecha();
-
+        // --- FUNCIONES INTERFAZ ---
+        function actualizarReloj() { document.getElementById("fechaHora").textContent = new Date().toLocaleString(); }
+        setInterval(actualizarReloj, 1000); actualizarReloj();
         document.getElementById("fechaConsulta").value = new Date().toISOString().split("T")[0];
 
-        async function generarFolio() {
-            const hoy = new Date();
-            const base = hoy.getFullYear().toString() + ("0" + (hoy.getMonth() + 1)).slice(-2) + ("0" + hoy.getDate()).slice(-2);
-            const contadorRef = ref(db, 'contadorFolios/' + base);
-            const result = await runTransaction(contadorRef, (c) => (c || 0) + 1);
-            return "RET-" + base + "-" + result.snapshot.val().toString().padStart(3, "0");
-        }
+        form.addEventListener("input", () => { btnGenerar.disabled = !form.checkValidity(); });
 
-        form.addEventListener("submit", async e => {
+        tipo.addEventListener("change", () => {
+            const esRevision = (tipo.value === "revision");
+            mercanciaDiv.classList.toggle("hidden", !esRevision);
+            document.getElementById("mercancia").required = esRevision;
+        });
+
+        // --- PROCESO DE GENERACIÓN ---
+        form.addEventListener("submit", async (e) => {
             e.preventDefault();
 
-            let correosFinales = [...listaCorreosBase];
-            if (tipo.value === "revision") {
-                correosFinales = correosFinales.concat(correosExtrasRevision);
-            }
-            window.destinatariosOutlook = correosFinales.join(",");
+            // 1. Generación de Folio
+            const hoy = new Date();
+            const idFecha = hoy.getFullYear() + ("0" + (hoy.getMonth() + 1)).slice(-2) + ("0" + hoy.getDate()).slice(-2);
+            const refCont = ref(db, 'contadorFolios/' + idFecha);
+            const res = await runTransaction(refCont, (c) => (c || 0) + 1);
+            const folioFinal = `RET-${idFecha}-${res.snapshot.val().toString().padStart(3, "0")}`;
+            document.getElementById("folio").textContent = folioFinal;
 
-            const folio = await generarFolio();
-            document.getElementById("folio").textContent = folio;
+            // 2. Definir Destinatarios
+            let destinatarios = [...correosBase];
+            if (tipo.value === "revision") destinatarios = destinatarios.concat(correosExtra);
+            window.finalTo = destinatarios.join(",");
 
-            const hora = new Date().getHours();
-            const saludo = (hora < 12) ? "Buenos días" : (hora < 19) ? "Buenas tardes" : "Buenas noches";
+            // 3. Redacción del Cuerpo (Sin omitir nada)
+            const saludo = (hoy.getHours() < 12) ? "Buenos días" : (hoy.getHours() < 19) ? "Buenas tardes" : "Buenas noches";
+            const op = document.getElementById("operacion").value;
+            const placasVal = document.getElementById("placas").value;
+            const operadorVal = document.getElementById("operador").value;
 
             let cuerpo = saludo + ",\n\n";
 
             if (tipo.value === "revision") {
                 cuerpo += "Por medio del presente, se solicita el valioso apoyo de la Subdirección de Vigilancia y Control para realizar la apertura del carril de excesos de exportación. Lo anterior, con la finalidad de permitir el ingreso y posicionamiento de la unidad con exceso de dimensiones en la explanada de vacíos.\n\n" +
-                          "PLACAS:\n" + placas.value + "\n\n" +
-                          "MERCANCÍA:\n" + mercancia.value + "\n\n" +
-                          "Posteriormente, la unidad será inspeccionada por el equipo ZBV del Departamento de Equipos No Intrusivos.\n\n" +
-                          "Gracias.\n\nSaludos cordiales,\n" + operador.value + "\nANAM Altamira";
+                          "Se les solicita de la manera más atenta confirmar en cuanto la unidad se encuentre debidamente posicionada.\n\n" +
+                          "PLACAS:\n" + placasVal + "\n\n" +
+                          "MERCANCÍA:\n" + document.getElementById("mercancia").value + "\n\n" +
+                          "Posteriormente, la unidad será inspeccionada por el equipo ZBV del Departamento de Equipos No Intrusivos en la explanada de vacíos de importación.\n\n" + 
+                          "De igual forma, se solicita dar aviso al personal del módulo una vez que la unidad haya sido revisada, así como responder a este correo electrónico al concluir la inspección.\n\n" +
+                          "Sin más por el momento, quedo atento a sus comentarios.\n\n" +
+                          "Gracias.\n\n" +
+                          "Saludos cordiales,\n" + operadorVal + "\nMódulos\nANAM Altamira";
             } else {
-                const area = (operacion.value === "EXPORTACION") ? "del carril de excesos a la exportación" : "de la Puerta Caracol";
+                const area = (op === "EXPORTACION") ? "del carril de excesos a la exportación" : "de la Puerta Caracol";
                 cuerpo += "El presente correo es para solicitar la apertura " + area + " para el retorno al vehículo con las placas siguientes:\n\n" +
-                          "PLACAS:\n" + placas.value + "\n\n" +
+                          "PLACAS:\n" + placasVal + "\n\n" +
                           "Tipo de retorno:\n" + tipo.options[tipo.selectedIndex].text + "\n\n" +
-                          "Gracias.\n\nSaludos cordiales,\n" + operador.value + "\nANAM Altamira";
+                          "Gracias.\n\n" +
+                          "Saludos cordiales,\n" + operadorVal + "\nMódulos\nANAM Altamira";
             }
 
-            await push(ref(db, "retornos"), {
-                folio,
-                fecha: new Date().toISOString(),
-                operacion: operacion.value,
-                operador: operador.value,
-                tipo: tipo.value,
-                placas: placas.value,
-                mercancia: mercancia.value || ""
+            // 4. Guardar en Base de Datos
+            await push(ref(db, "retornos"), { 
+                folio: folioFinal, 
+                fecha: hoy.toISOString(), 
+                operador: operadorVal, 
+                placas: placasVal, 
+                tipo: tipo.value 
             });
 
-            window.asuntoActual = operacion.value + " - " + tipo.options[tipo.selectedIndex].text;
-            window.cuerpoActual = cuerpo;
-
+            // 5. Preparar Modal
+            window.finalSub = `${op} - ${tipo.options[tipo.selectedIndex].text}`;
+            window.finalBody = cuerpo;
             modal.style.display = "flex";
         });
 
-        window.abrirAppOutlook = function() {
-            const to = window.destinatariosOutlook;
-            const sub = encodeURIComponent(window.asuntoActual);
-            const body = encodeURIComponent(window.cuerpoActual);
+        // --- FUNCIÓN PARA ABRIR OUTLOOK Y REFRESCAR ---
+        window.enviarYLimpiarCaptura = function() {
+            const to = window.finalTo;
+            const sub = encodeURIComponent(window.finalSub);
+            const body = encodeURIComponent(window.finalBody);
 
-            // Fuerza apertura en App Outlook
+            // Abre App Outlook (Protocolo específico)
             window.location.href = `ms-outlook://compose?to=${to}&subject=${sub}&body=${body}`;
 
-            // Fallback en caso de que no tenga la app (abre mail predeterminado)
-            setTimeout(() => {
-                if (!document.hidden) {
-                    window.location.href = `mailto:${to}?subject=${sub}&body=${body}`;
-                }
+            // Fallback si la App no existe
+            setTimeout(() => { 
+                if (!document.hidden) window.location.href = `mailto:${to}?subject=${sub}&body=${body}`; 
             }, 1200);
 
-            cerrarModal();
-            form.reset();
-            mercanciaDiv.classList.add("hidden");
-            btnGenerar.disabled = true;
-            document.getElementById("folio").textContent = "--";
+            // --- REFRESCADO DE LA CAPTURA ---
+            setTimeout(() => {
+                form.reset();
+                document.getElementById("folio").textContent = "--";
+                mercanciaDiv.classList.add("hidden");
+                btnGenerar.disabled = true;
+                cerrarModal();
+            }, 800);
         };
 
-        window.cerrarModal = function() {
-            modal.style.display = "none";
-        };
+        window.cerrarModal = () => { modal.style.display = "none"; };
 
+        // --- CONSULTA Y EXCEL ---
         window.consultarPlacas = async function() {
-            const contenedor = document.getElementById("tablaResultados");
-            const fechaFiltro = document.getElementById("fechaConsulta").value;
-            if (tablaVisible) { contenedor.innerHTML = ""; tablaVisible = false; return; }
-            
-            const snapshot = await get(ref(db, "retornos"));
+            const snap = await get(ref(db, "retornos"));
+            const fecha = document.getElementById("fechaConsulta").value;
             let html = "<table><tr><th>Operador</th><th>Placas</th></tr>";
-            snapshot.forEach(doc => {
-                let d = doc.val();
-                if (d.fecha.startsWith(fechaFiltro)) {
-                    html += "<tr><td>" + d.operador + "</td><td>" + d.placas + "</td></tr>";
-                }
+            snap.forEach(d => {
+                const v = d.val();
+                if(v.fecha.startsWith(fecha)) html += `<tr><td>${v.operador}</td><td>${v.placas}</td></tr>`;
             });
-            contenedor.innerHTML = html + "</table>";
-            tablaVisible = true;
+            document.getElementById("tablaResultados").innerHTML = html + "</table>";
         };
 
         window.exportarExcel = async function() {
-            const snapshot = await get(ref(db, "retornos"));
-            let datos = [];
-            snapshot.forEach(doc => datos.push(doc.val()));
-            const ws = XLSX.utils.json_to_sheet(datos);
+            const snap = await get(ref(db, "retornos"));
+            let data = []; snap.forEach(d => data.push(d.val()));
+            const ws = XLSX.utils.json_to_sheet(data);
             const wb = XLSX.utils.book_new();
-            XLSX.utils.book_append_sheet(wb, ws, "Retornos");
-            XLSX.writeFile(wb, "Retornos_ANAM.xlsx");
+            XLSX.utils.book_append_sheet(wb, ws, "Registros");
+            XLSX.writeFile(wb, "Reporte_ANAM.xlsx");
         };
     </script>
 </body>
