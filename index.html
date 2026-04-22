@@ -50,18 +50,15 @@
         table { width: 100%; border-collapse: collapse; margin-top: 15px; background: #fff; }
         th, td { border: 1px solid #ccc; padding: 8px; font-size: 12px; text-align: center; }
         th { background: #611232; color: #fff; }
-        .footer { text-align: center; font-size: 11px; color: #98989A; margin: 20px 0; }
 
-        .modal { display: none; position: fixed; z-index: 999; inset: 0; background: rgba(0,0,0,0.7); justify-content: center; align-items: center; padding: 20px; }
-        .modal-content { background: #fff; padding: 25px; border-radius: 12px; width: 100%; max-width: 400px; text-align: center; box-shadow: 0 10px 25px rgba(0,0,0,0.3); }
-        .modal h2 { color: #611232; margin-top: 0; font-size: 20px; }
-        .modal p { font-size: 14px; color: #555; margin-bottom: 20px; }
-        .modal button { width: 100%; margin-top: 10px; padding: 15px; border: none; border-radius: 8px; font-weight: bold; cursor: pointer; font-size: 15px; }
+        .modal { display: none; position: fixed; z-index: 999; inset: 0; background: rgba(0,0,0,0.75); justify-content: center; align-items: center; padding: 20px; }
+        .modal-content { background: #fff; padding: 25px; border-radius: 15px; width: 100%; max-width: 400px; text-align: center; }
+        .modal h2 { color: #611232; font-size: 22px; margin-bottom: 10px; }
+        .modal button { width: 100%; margin-top: 12px; padding: 16px; border: none; border-radius: 8px; font-weight: bold; cursor: pointer; font-size: 15px; }
         
-        .btn-outlook { background: #0078D4; color: white; border-bottom: 4px solid #005a9e !important; }
-        .btn-mail { background: #1E5B4F; color: white; }
+        .btn-outlook { background: #0078D4; color: white; }
         .btn-copy { background: #A57F2C; color: white; }
-        .btn-close { background: #eeeeee; color: #333; }
+        .btn-close { background: #f0f0f0; color: #333; }
     </style>
 </head>
 
@@ -116,17 +113,14 @@
         </form>
     </div>
 
-    <div class="footer">© 2026 Agencia Nacional de Aduanas de México</div>
-
     <div id="modal" class="modal">
         <div class="modal-content">
-            <h2>Enviar Solicitud</h2>
-            <p>Se ha generado el folio. ¿Cómo deseas proceder?</p>
+            <h2>Solicitud Generada</h2>
+            <p>Selecciona una opción para enviar:</p>
             
-            <button class="btn-outlook" onclick="intentarOutlook()">1. ABRIR APP OUTLOOK</button>
-            <button class="btn-mail" onclick="abrirCorreoNormal()">2. Correo Predeterminado</button>
-            <button class="btn-copy" onclick="copiarCorreo()">3. Copiar Texto (Manual)</button>
-            <button class="btn-close" onclick="cerrarModal()">Cerrar</button>
+            <button class="btn-outlook" onclick="enviarOutlook()">ABRIR EN OUTLOOK</button>
+            <button class="btn-copy" onclick="copiarCuerpo()">COPIAR TEXTO (Manual)</button>
+            <button class="btn-close" onclick="cerrarModal()">CERRAR</button>
         </div>
     </div>
 
@@ -148,25 +142,17 @@
         const db = getDatabase(app);
 
         const form = document.getElementById("formRetorno");
-        const tipo = document.getElementById("tipo");
-        const mercanciaDiv = document.getElementById("mercanciaDiv");
         const btnGenerar = document.getElementById("btnGenerar");
-
-        window.datosEnvio = { to: "", sub: "", body: "", mailto: "" };
+        
+        window.datosEnvio = { to: "", sub: "", body: "" };
 
         const correosBase = ["juan.reyesg@anam.gob.mx","vyc.altamira@anam.gob.mx","alejandra.munoz@anam.gob.mx","jorge.silva@anam.gob.mx","abraham.gomez@anam.gob.mx","daniel.santosh@anam.gob.mx","christian.monrreal@anam.gob.mx","monica.becerra@anam.gob.mx","anahi.santiago@anam.gob.mx"];
         const correosExtra = ["emilio.garin@anam.gob.mx","sergio.diazr@anam.gob.mx","oscar.narro@anam.gob.mx"];
 
         function actualizarReloj(){ document.getElementById("fechaHora").textContent = new Date().toLocaleString(); }
         setInterval(actualizarReloj, 1000); actualizarReloj();
-        document.getElementById("fechaConsulta").value = new Date().toISOString().split("T")[0];
 
         form.addEventListener("input", () => { btnGenerar.disabled = !form.checkValidity(); });
-        tipo.addEventListener("change", () => {
-            const esRevision = (tipo.value === "revision");
-            mercanciaDiv.classList.toggle("hidden", !esRevision);
-            document.getElementById("mercancia").required = esRevision;
-        });
 
         form.addEventListener("submit", async (e) => {
             e.preventDefault();
@@ -179,102 +165,56 @@
             const folioFinal = `RET-${idFecha}-${res.snapshot.val().toString().padStart(3, "0")}`;
             document.getElementById("folio").textContent = folioFinal;
 
-            const saludo = (hoy.getHours() < 12) ? "Buenos días" : (hoy.getHours() < 19) ? "Buenas tardes" : "Buenas noches";
             const op = document.getElementById("operacion").value;
             const placasVal = document.getElementById("placas").value;
             const operadorVal = document.getElementById("operador").value;
-            const mercaVal = document.getElementById("mercancia").value;
+            const tipoText = document.getElementById("tipo").options[document.getElementById("tipo").selectedIndex].text;
 
-            let cuerpo = saludo + ",\n\n";
-            if(tipo.value === "revision"){
-                cuerpo += "Por medio del presente, se solicita el valioso apoyo de la Subdirección de Vigilancia y Control para realizar la apertura del carril de excesos de exportación. Lo anterior, con la finalidad de permitir el ingreso y posicionamiento de la unidad con exceso de dimensiones en la explanada de vacíos.\n\nSe les solicita de la manera más atenta confirmar en cuanto la unidad se encuentre debidamente posicionada.\n\nPLACAS:\n" + placasVal + "\n\nMERCANCÍA:\n" + mercaVal + "\n\nPosteriormente, la unidad será inspeccionada por el equipo ZBV del Departamento de Equipos No Intrusivos en la explanada de vacíos de importación.\n\nDe igual forma, se solicita dar aviso al personal del módulo una vez que la unidad haya sido revisada, así como responder a este correo electrónico al concluir la inspección.\n\nSin más por el momento, quedo atento a sus comentarios.\n\nGracias.\n\nSaludos cordiales,\n" + operadorVal + "\nMódulos\nANAM Altamira";
-            } else {
-                const area = (op === "EXPORTACION") ? "del carril de excesos a la exportación" : "de la Puerta Caracol";
-                cuerpo += "El presente correo es para solicitar la apertura " + area + " para el retorno al vehículo con las placas siguientes:\n\nPLACAS:\n" + placasVal + "\n\nTipo de retorno:\n" + tipo.options[tipo.selectedIndex].text + "\n\nGracias.\n\nSaludos cordiales,\n" + operadorVal + "\nMódulos\nANAM Altamira";
-            }
+            let cuerpo = "Buenas tardes,\n\n";
+            cuerpo += `Se solicita el apoyo para el vehículo con PLACAS: ${placasVal}\n`;
+            cuerpo += `Tipo de solicitud: ${tipoText}\n\n`;
+            cuerpo += `Saludos cordiales,\n${operadorVal}`;
 
-            await push(ref(db, "retornos"), { folio: folioFinal, fecha: hoy.toISOString(), operador: operadorVal, placas: placasVal, tipo: tipo.value });
+            await push(ref(db, "retornos"), { folio: folioFinal, fecha: hoy.toISOString(), operador: operadorVal, placas: placasVal });
 
-            window.datosEnvio.to = (tipo.value === "revision") ? correosBase.concat(correosExtra).join(",") : correosBase.join(",");
-            window.datosEnvio.sub = `${op} - ${tipo.options[tipo.selectedIndex].text}`;
+            window.datosEnvio.to = (document.getElementById("tipo").value === "revision") ? correosBase.concat(correosExtra).join(",") : correosBase.join(",");
+            window.datosEnvio.sub = `${op} - ${tipoText}`;
             window.datosEnvio.body = cuerpo;
-            window.datosEnvio.mailto = `mailto:${window.datosEnvio.to}?subject=${encodeURIComponent(window.datosEnvio.sub)}&body=${encodeURIComponent(window.datosEnvio.body)}`;
 
             document.getElementById("modal").style.display = "flex";
-
-            setTimeout(() => {
-                form.reset();
-                document.getElementById("folio").textContent = "--";
-                mercanciaDiv.classList.add("hidden");
-                btnGenerar.disabled = true;
-            }, 1000);
+            btnGenerar.disabled = false;
         });
 
-        /* === FUNCIONES DE ACCIÓN === */
-
-        window.intentarOutlook = function() {
-            const to = window.datosEnvio.to;
-            const sub = encodeURIComponent(window.datosEnvio.sub);
-            const body = encodeURIComponent(window.datosEnvio.body);
-
-            // Intentamos el enlace directo más sencillo. 
-            // Si esto falla en móvil, el navegador suele mostrar el error de redirección.
-            // Para evitarlo, usamos un elemento <a> temporal.
-            const urlApp = `ms-outlook://compose?to=${to}&subject=${sub}&body=${body}`;
+        /* === FUNCIÓN OUTLOOK CORREGIDA === */
+        window.enviarOutlook = function() {
+            const { to, sub, body } = window.datosEnvio;
             
-            const link = document.createElement('a');
-            link.href = urlApp;
-            document.body.appendChild(link);
-            link.click();
-            document.body.removeChild(link);
+            // 1. Intentamos el esquema de la App directamente
+            const appUrl = `ms-outlook://compose?to=${to}&subject=${encodeURIComponent(sub)}&body=${encodeURIComponent(body)}`;
+            
+            // 2. Definimos la URL web de Office 365 (esto es lo que abre si la app falla)
+            const webUrl = `https://outlook.office.com/mail/deeplink/compose?to=${encodeURIComponent(to)}&subject=${encodeURIComponent(sub)}&body=${encodeURIComponent(body)}`;
 
-            // Si después de 1 segundo el usuario sigue aquí (no saltó a la app), 
-            // usamos el respaldo de Outlook Web.
+            // Intentamos abrir la app
+            window.location.href = appUrl;
+
+            // Si en 1 segundo no se ha cerrado la pestaña (el usuario sigue aquí),
+            // significa que la app no abrió o el enlace falló, entonces saltamos a la web.
             setTimeout(() => {
                 if (!document.hidden) {
-                    const urlWeb = `https://outlook.office.com/mail/deeplink/compose?to=${to}&subject=${sub}&body=${body}`;
-                    window.location.href = urlWeb;
+                    window.location.href = webUrl;
                 }
             }, 1000);
         };
 
-        window.abrirCorreoNormal = function() {
-            window.location.href = window.datosEnvio.mailto;
-        };
-
-        window.copiarCorreo = function() {
-            const el = document.createElement('textarea');
-            el.value = window.datosEnvio.body;
-            document.body.appendChild(el);
-            el.select();
-            document.execCommand('copy');
-            document.body.removeChild(el);
-            alert("Texto copiado. Abre Outlook manualmente y pégalo.");
+        window.copiarCuerpo = function() {
+            navigator.clipboard.writeText(window.datosEnvio.body);
+            alert("Copiado al portapapeles");
         };
 
         window.cerrarModal = function() {
             document.getElementById("modal").style.display = "none";
         };
-
-        window.consultarPlacas = async function(){
-            const snap = await get(ref(db, "retornos"));
-            const fecha = document.getElementById("fechaConsulta").value;
-            let html = "<table><tr><th>Operador</th><th>Placas</th></tr>";
-            snap.forEach(d => {
-                const v = d.val();
-                if(v.fecha.startsWith(fecha)) html += `<tr><td>${v.operador}</td><td>${v.placas}</td></tr>`;
-            });
-            document.getElementById("tablaResultados").innerHTML = html + "</table>";
-        }
-
-        window.exportarExcel = async function(){
-            const snap = await get(ref(db, "retornos"));
-            let data = []; snap.forEach(d => data.push(d.val()));
-            const ws = XLSX.utils.json_to_sheet(data);
-            const wb = XLSX.utils.book_new();
-            XLSX.utils.book_append_sheet(wb, ws, "Registros");
-            XLSX.writeFile(wb, "Reporte_ANAM.xlsx");
-        }
     </script>
 </body>
 </html>
