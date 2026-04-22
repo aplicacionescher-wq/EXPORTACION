@@ -56,178 +56,183 @@
 
 <body>
 
-<div class="top-bar">Gobierno de México | Agencia Nacional de Aduanas de México</div>
+    <div class="top-bar">Gobierno de México | Agencia Nacional de Aduanas de México</div>
 
-<div class="container">
-    <div class="logo-gota"><img src="logo-anam2.png" alt="ANAM"></div>
-    <div class="title">Solicitud de Retornos Módulos</div>
+    <div class="container">
+        <div class="logo-gota"><img src="logo-anam2.png" alt="ANAM"></div>
+        <div class="title">Solicitud de Retornos Módulos</div>
 
-    <h3>Generador de Solicitudes</h3>
-    <p><strong>Folio:</strong> <span id="folio">--</span></p>
-    <p><strong>Fecha:</strong> <span id="fechaHora"></span></p>
+        <h3>Generador de Solicitudes</h3>
+        <p><strong>Folio:</strong> <span id="folio">--</span></p>
+        <p><strong>Fecha:</strong> <span id="fechaHora"></span></p>
 
-    <form id="formRetorno">
-        <label>Tipo de Operación</label>
-        <select id="operacion" required>
-            <option selected>EXPORTACION</option>
-        </select>
+        <form id="formRetorno">
+            <label>Tipo de Operación</label>
+            <select id="operacion" required>
+                    <option selected>EXPORTACION</option>
+            </select>
 
-        <label>Operador</label>
-        <input type="text" id="operador" placeholder="Nombre completo" required>
+            <label>Operador</label>
+            <input type="text" id="operador" placeholder="Nombre completo" required>
 
-        <label>Tipo de Solicitud</label>
-        <select id="tipo" required>
-            <option value="nueva" selected>Retorno Para Nueva Exploración</option>
-            <option value="horario">Retorno Fuera De Horario</option>
-            <option value="sin_extra">Retorno Sin Servicio Extraordinario</option>
-            <option value="carril">Retorno Por Equivocación de Carril</option>
-            <option value="revision">Solicitud de Revisión Con ZBV De Mercancía Sobre-Dimensionada</option>
-        </select>
+            <label>Tipo de Solicitud</label>
+            <select id="tipo" required>
+                <option value="nueva" selected>Retorno Para Nueva Exploración</option>
+                <option value="horario">Retorno Fuera De Horario</option>
+                <option value="sin_extra">Retorno Sin Servicio Extraordinario</option>
+                <option value="carril">Retorno Por Equivocación de Carril</option>
+                <option value="revision">Solicitud de Revisión Con ZBV De Mercancía Sobre-Dimensionada</option>
+            </select>
 
-        <label>Placas</label>
-        <textarea id="placas" required></textarea>
+            <label>Placas</label>
+            <textarea id="placas" placeholder="Introduce placas" required></textarea>
 
-        <div id="mercanciaDiv" class="hidden">
-            <label>Descripción de la Mercancía</label>
-            <textarea id="mercancia"></textarea>
-        </div>
+            <div id="mercanciaDiv" class="hidden">
+                <label>Descripción de la Mercancía</label>
+                <textarea id="mercancia" placeholder="Detalle la mercancía"></textarea>
+            </div>
 
-        <button type="submit" id="btnGenerar" class="btn-main" disabled>Generar y Abrir Outlook</button>
+            <button type="submit" id="btnGenerar" class="btn-main" disabled>Generar y Abrir Outlook</button>
 
-        <hr style="margin: 30px 0; border-top: 1px solid #ddd;">
+            <hr style="margin: 30px 0; border: 0; border-top: 1px solid #ddd;">
 
-        <label>Historial</label>
-        <input type="date" id="fechaConsulta">
-        <button type="button" onclick="consultarPlacas()" class="btn-query">CONSULTAR PLACAS</button>
-        <button type="button" onclick="exportarExcel()" class="btn-query">EXPORTAR A EXCEL</button>
+            <label>Historial</label>
+            <input type="date" id="fechaConsulta">
+            <button type="button" onclick="consultarPlacas()" class="btn-query">CONSULTAR PLACAS</button>
+            <button type="button" onclick="exportarExcel()" class="btn-query">EXPORTAR A EXCEL</button>
 
-        <div id="tablaResultados"></div>
-    </form>
-</div>
+            <div id="tablaResultados"></div>
+        </form>
+    </div>
 
-<div class="footer">© 2026 Agencia Nacional de Aduanas de México</div>
+    <div class="footer">© 2026 Agencia Nacional de Aduanas de México</div>
 
-<script type="module">
-import { initializeApp } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-app.js";
-import { getDatabase, ref, push, runTransaction, get } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-database.js";
+    <script type="module">
+        import { initializeApp } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-app.js";
+        import { getDatabase, ref, push, runTransaction, get } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-database.js";
 
-const firebaseConfig = {
-    apiKey: "TU_API_KEY",
-    authDomain: "retornos-anam-altamira.firebaseapp.com",
-    databaseURL: "https://retornos-anam-altamira-default-rtdb.firebaseio.com",
-    projectId: "retornos-anam-altamira",
-    storageBucket: "retornos-anam-altamira.firebasestorage.app",
-    messagingSenderId: "975848132753",
-    appId: "1:975848132753:web:cdb84e00b5d33006ffef30"
-};
+        // --- CONFIGURACIÓN FIREBASE ---
+        const firebaseConfig = {
+            apiKey: "TU_API_KEY",
+            authDomain: "retornos-anam-altamira.firebaseapp.com",
+            databaseURL: "https://retornos-anam-altamira-default-rtdb.firebaseio.com",
+            projectId: "retornos-anam-altamira",
+            storageBucket: "retornos-anam-altamira.firebasestorage.app",
+            messagingSenderId: "975848132753",
+            appId: "1:975848132753:web:cdb84e00b5d33006ffef30"
+        };
 
-const app = initializeApp(firebaseConfig);
-const db = getDatabase(app);
+        const app = initializeApp(firebaseConfig);
+        const db = getDatabase(app);
 
-const form = document.getElementById("formRetorno");
-const tipo = document.getElementById("tipo");
-const mercanciaDiv = document.getElementById("mercanciaDiv");
-const btnGenerar = document.getElementById("btnGenerar");
+        // --- REFERENCIAS ---
+        const form = document.getElementById("formRetorno");
+        const tipo = document.getElementById("tipo");
+        const mercanciaDiv = document.getElementById("mercanciaDiv");
+        const btnGenerar = document.getElementById("btnGenerar");
 
-const correosBase = ["juan.reyesg@anam.gob.mx","vyc.altamira@anam.gob.mx","alejandra.munoz@anam.gob.mx","jorge.silva@anam.gob.mx","abraham.gomez@anam.gob.mx","daniel.santosh@anam.gob.mx","christian.monrreal@anam.gob.mx","monica.becerra@anam.gob.mx","anahi.santiago@anam.gob.mx"];
-const correosExtra = ["emilio.garin@anam.gob.mx","sergio.diazr@anam.gob.mx","oscar.narro@anam.gob.mx"];
+        const correosBase = ["juan.reyesg@anam.gob.mx", "vyc.altamira@anam.gob.mx", "alejandra.munoz@anam.gob.mx", "jorge.silva@anam.gob.mx", "abraham.gomez@anam.gob.mx", "daniel.santosh@anam.gob.mx", "christian.monrreal@anam.gob.mx", "monica.becerra@anam.gob.mx", "anahi.santiago@anam.gob.mx"];
+        const correosExtra = ["emilio.garin@anam.gob.mx", "sergio.diazr@anam.gob.mx", "oscar.narro@anam.gob.mx"];
 
-function actualizarReloj(){ document.getElementById("fechaHora").textContent=new Date().toLocaleString(); }
-setInterval(actualizarReloj,1000); actualizarReloj();
-document.getElementById("fechaConsulta").value=new Date().toISOString().split("T")[0];
+        // --- RELOJ Y FECHA ---
+        function actualizarReloj() { document.getElementById("fechaHora").textContent = new Date().toLocaleString(); }
+        setInterval(actualizarReloj, 1000); actualizarReloj();
+        document.getElementById("fechaConsulta").value = new Date().toISOString().split("T")[0];
 
-form.addEventListener("input",()=>{ btnGenerar.disabled=!form.checkValidity(); });
-tipo.addEventListener("change",()=>{
-    const esRevision=(tipo.value==="revision");
-    mercanciaDiv.classList.toggle("hidden",!esRevision);
-    document.getElementById("mercancia").required=esRevision;
-});
+        // --- VALIDACIÓN DINÁMICA ---
+        form.addEventListener("input", () => { btnGenerar.disabled = !form.checkValidity(); });
+        tipo.addEventListener("change", () => {
+            const esRevision = (tipo.value === "revision");
+            mercanciaDiv.classList.toggle("hidden", !esRevision);
+            document.getElementById("mercancia").required = esRevision;
+        });
 
-form.addEventListener("submit",async(e)=>{
-    e.preventDefault();
-    btnGenerar.disabled=true;
+        // --- ENVÍO Y APERTURA ---
+        form.addEventListener("submit", async (e) => {
+            e.preventDefault();
+            btnGenerar.disabled = true;
 
-    const hoy=new Date();
-    const idFecha=hoy.getFullYear()+("0"+(hoy.getMonth()+1)).slice(-2)+("0"+hoy.getDate()).slice(-2);
-    const refCont=ref(db,'contadorFolios/'+idFecha);
-    const res=await runTransaction(refCont,(c)=>(c||0)+1);
-    const folioFinal=`RET-${idFecha}-${res.snapshot.val().toString().padStart(3,"0")}`;
-    document.getElementById("folio").textContent=folioFinal;
+            // 1. Folio en Firebase
+            const hoy = new Date();
+            const idFecha = hoy.getFullYear() + ("0" + (hoy.getMonth() + 1)).slice(-2) + ("0" + hoy.getDate()).slice(-2);
+            const refCont = ref(db, 'contadorFolios/' + idFecha);
+            const res = await runTransaction(refCont, (c) => (c || 0) + 1);
+            const folioFinal = `RET-${idFecha}-${res.snapshot.val().toString().padStart(3, "0")}`;
+            document.getElementById("folio").textContent = folioFinal;
 
-    const saludo=(hoy.getHours()<12)?"Buenos días":(hoy.getHours()<19)?"Buenas tardes":"Buenas noches";
-    const op=document.getElementById("operacion").value;
-    const placasVal=document.getElementById("placas").value;
-    const operadorVal=document.getElementById("operador").value;
-    const mercaVal=document.getElementById("mercancia").value;
+            // 2. Construcción de Correo
+            const saludo = (hoy.getHours() < 12) ? "Buenos días" : (hoy.getHours() < 19) ? "Buenas tardes" : "Buenas noches";
+            const op = document.getElementById("operacion").value;
+            const placasVal = document.getElementById("placas").value;
+            const operadorVal = document.getElementById("operador").value;
+            const mercaVal = document.getElementById("mercancia").value;
 
-    let cuerpo=saludo+",\n\n";
+            let cuerpo = saludo + ",\n\n";
+            if (tipo.value === "revision") {
+                cuerpo += "Por medio del presente, se solicita el valioso apoyo de la Subdirección de Vigilancia y Control para realizar la apertura del carril de excesos de exportación. Lo anterior, con la finalidad de permitir el ingreso y posicionamiento de la unidad con exceso de dimensiones en la explanada de vacíos.\n\n" +
+                          "Se les solicita de la manera más atenta confirmar en cuanto la unidad se encuentre debidamente posicionada.\n\n" +
+                          "PLACAS:\n" + placasVal + "\n\n" +
+                          "MERCANCÍA:\n" + mercaVal + "\n\n" +
+                          "Posteriormente, la unidad será inspeccionada por el equipo ZBV del Departamento de Equipos No Intrusivos en la explanada de vacíos de importación.\n\n" + 
+                          "De igual forma, se solicita dar aviso al personal del módulo una vez que la unidad haya sido revisada, así como responder a este correo electrónico al concluir la inspección.\n\n" +
+                          "Sin más por el momento, quedo atento a sus comentarios.\n\nGracias.\n\nSaludos cordiales,\n" + operadorVal + "\nMódulos\nANAM Altamira";
+            } else {
+                const area = (op === "EXPORTACION") ? "del carril de excesos a la exportación" : "de la Puerta Caracol";
+                cuerpo += "El presente correo es para solicitar la apertura " + area + " para el retorno al vehículo con las placas siguientes:\n\nPLACAS:\n" + placasVal + "\n\nTipo de retorno:\n" + tipo.options[tipo.selectedIndex].text + "\n\nGracias.\n\nSaludos cordiales,\n" + operadorVal + "\nMódulos\nANAM Altamira";
+            }
 
-    if(tipo.value==="revision"){
-        cuerpo+="Por medio del presente, se solicita el valioso apoyo de la Subdirección de Vigilancia y Control para realizar la apertura del carril de excesos de exportación. Lo anterior, con la finalidad de permitir el ingreso y posicionamiento de la unidad con exceso de dimensiones en la explanada de vacíos.\n\n"+
-        "Se les solicita de la manera más atenta confirmar en cuanto la unidad se encuentre debidamente posicionada.\n\n"+
-        "PLACAS:\n"+placasVal+"\n\nMERCANCÍA:\n"+mercaVal+"\n\n"+
-        "Posteriormente, la unidad será inspeccionada por el equipo ZBV del Departamento de Equipos No Intrusivos en la explanada de vacíos de importación.\n\n"+
-        "De igual forma, se solicita dar aviso al personal del módulo una vez que la unidad haya sido revisada, así como responder a este correo electrónico al concluir la inspección.\n\n"+
-        "Sin más por el momento, quedo atento a sus comentarios.\n\nGracias.\n\nSaludos cordiales,\n"+operadorVal+"\nMódulos\nANAM Altamira";
-    } else {
-        const area=(op==="EXPORTACION")?"del carril de excesos a la exportación":"de la Puerta Caracol";
-        cuerpo+="El presente correo es para solicitar la apertura "+area+" para el retorno al vehículo con las placas siguientes:\n\nPLACAS:\n"+placasVal+"\n\nTipo de retorno:\n"+tipo.options[tipo.selectedIndex].text+"\n\nGracias.\n\nSaludos cordiales,\n"+operadorVal+"\nMódulos\nANAM Altamira";
-    }
+            // 3. Guardar en DB
+            await push(ref(db, "retornos"), { folio: folioFinal, fecha: hoy.toISOString(), operador: operadorVal, placas: placasVal, tipo: tipo.value });
 
-    await push(ref(db,"retornos"),{folio:folioFinal,fecha:hoy.toISOString(),operador:operadorVal,placas:placasVal,tipo:tipo.value});
+            // 4. Apertura Segura (Evita error de redirección)
+            const to = (tipo.value === "revision") ? correosBase.concat(correosExtra).join(",") : correosBase.join(",");
+            const subject = encodeURIComponent(`${op} - ${tipo.options[tipo.selectedIndex].text}`);
+            const body = encodeURIComponent(cuerpo);
+            
+            // Abrimos Outlook
+            window.location.href = `ms-outlook://compose?to=${to}&subject=${subject}&body=${body}`;
 
-    const toRaw=(tipo.value==="revision")?correosBase.concat(correosExtra).join(","):correosBase.join(",");
-    const to=encodeURIComponent(toRaw);
-    const subject=encodeURIComponent(`${op} - ${tipo.options[tipo.selectedIndex].text}`);
-    const body=encodeURIComponent(cuerpo);
+            // Fallback por si Outlook no responde rápido
+            setTimeout(() => { if (!document.hidden) window.location.href = `mailto:${to}?subject=${subject}&body=${body}`; }, 800);
 
-    const outlookURL=`ms-outlook://compose?to=${to}&subject=${subject}&body=${body}`;
+            // 5. LIMPIEZA AUTOMÁTICA
+            setTimeout(() => {
+                form.reset();
+                document.getElementById("folio").textContent = "--";
+                mercanciaDiv.classList.add("hidden");
+                btnGenerar.disabled = true;
+            }, 1000);
+        });
 
-    let intento=false;
-    window.addEventListener("blur",()=>{ intento=true; });
-
-    window.location.href=outlookURL;
-
-    setTimeout(()=>{
-        if(!intento){
-            alert("No se pudo abrir Outlook. Verifica que esté instalado.");
+        // --- REGISTRO DEL SERVICE WORKER (PWA) ---
+        if ('serviceWorker' in navigator) {
+            window.addEventListener('load', () => {
+                navigator.serviceWorker.register('./service-worker.js')
+                    .then(reg => console.log('PWA: Service Worker Activo'))
+                    .catch(err => console.log('PWA: Error', err));
+            });
         }
-    },1500);
 
-    setTimeout(()=>{
-        form.reset();
-        document.getElementById("folio").textContent="--";
-        mercanciaDiv.classList.add("hidden");
-        btnGenerar.disabled=true;
-    },1000);
-});
+        // --- CONSULTAS ---
+        window.consultarPlacas = async function() {
+            const snap = await get(ref(db, "retornos"));
+            const fecha = document.getElementById("fechaConsulta").value;
+            let html = "<table><tr><th>Operador</th><th>Placas</th></tr>";
+            snap.forEach(d => {
+                const v = d.val();
+                if(v.fecha.startsWith(fecha)) html += `<tr><td>${v.operador}</td><td>${v.placas}</td></tr>`;
+            });
+            document.getElementById("tablaResultados").innerHTML = html + "</table>";
+        };
 
-if('serviceWorker'in navigator){
-    window.addEventListener('load',()=>{
-        navigator.serviceWorker.register('./service-worker.js');
-    });
-}
-
-window.consultarPlacas=async function(){
-    const snap=await get(ref(db,"retornos"));
-    const fecha=document.getElementById("fechaConsulta").value;
-    let html="<table><tr><th>Operador</th><th>Placas</th></tr>";
-    snap.forEach(d=>{
-        const v=d.val();
-        if(v.fecha.startsWith(fecha)) html+=`<tr><td>${v.operador}</td><td>${v.placas}</td></tr>`;
-    });
-    document.getElementById("tablaResultados").innerHTML=html+"</table>";
-};
-
-window.exportarExcel=async function(){
-    const snap=await get(ref(db,"retornos"));
-    let data=[]; snap.forEach(d=>data.push(d.val()));
-    const ws=XLSX.utils.json_to_sheet(data);
-    const wb=XLSX.utils.book_new();
-    XLSX.utils.book_append_sheet(wb,ws,"Registros");
-    XLSX.writeFile(wb,"Reporte_ANAM.xlsx");
-};
-</script>
-
+        window.exportarExcel = async function() {
+            const snap = await get(ref(db, "retornos"));
+            let data = []; snap.forEach(d => data.push(d.val()));
+            const ws = XLSX.utils.json_to_sheet(data);
+            const wb = XLSX.utils.book_new();
+            XLSX.utils.book_append_sheet(wb, ws, "Registros");
+            XLSX.writeFile(wb, "Reporte_ANAM.xlsx");
+        };
+    </script>
 </body>
 </html>
