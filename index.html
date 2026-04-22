@@ -42,11 +42,8 @@
         select, input, textarea { width: 100%; padding: 10px; margin: 6px 0 14px; border-radius: 6px; border: 1px solid #ccc; font-size: 14px; box-sizing: border-box; }
         #placas { text-transform: uppercase; font-family: monospace; }
 
-        /* Botones Principales */
         .btn-main { background: #1E5B4F; color: #fff; padding: 14px; border: none; width: 100%; border-radius: 6px; font-size: 15px; cursor: pointer; font-weight: bold; margin-top: 6px; }
         .btn-main:disabled { background: #999; cursor: not-allowed; opacity: 0.6; }
-
-        /* Botones de Consulta (Guinda) */
         .btn-query { background: #611232; color: #fff; padding: 10px; border: none; width: 100%; border-radius: 6px; font-size: 13px; cursor: pointer; font-weight: bold; margin-top: 8px; }
 
         .hidden { display: none; }
@@ -72,6 +69,7 @@
         <form id="formRetorno">
             <label>Tipo de Operación</label>
             <select id="operacion" required>
+                <option>IMPORTACION</option>
                 <option selected>EXPORTACION</option>
             </select>
 
@@ -84,7 +82,7 @@
                 <option value="horario">Retorno Fuera De Horario</option>
                 <option value="sin_extra">Retorno Sin Servicio Extraordinario</option>
                 <option value="carril">Retorno Por Equivocación de Carril</option>
-                <option value="revision">Solicitud de Revisión Con ZBV De Mercancía Sobre-Dimensionada</option>
+                <option value="revision">Solicitud de Revisión De Mercancía Sobre-Dimensionada</option>
             </select>
 
             <label>Placas</label>
@@ -92,10 +90,10 @@
 
             <div id="mercanciaDiv" class="hidden">
                 <label>Descripción de la Mercancía</label>
-                <textarea id="mercancia" placeholder="Detalle la mercancía sobre-dimensionada"></textarea>
+                <textarea id="mercancia" placeholder="Detalle la mercancía"></textarea>
             </div>
 
-            <button type="submit" id="btnGenerar" class="btn-main" disabled>Generar y Abrir Outlook</button>
+            <button type="submit" id="btnGenerar" class="btn-main" disabled>GENERAR Y ABRIR OUTLOOK</button>
 
             <hr style="margin: 30px 0; border: 0; border-top: 1px solid #ddd;">
 
@@ -114,6 +112,7 @@
         import { initializeApp } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-app.js";
         import { getDatabase, ref, push, runTransaction, get } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-database.js";
 
+        // --- CONFIGURACIÓN FIREBASE ---
         const firebaseConfig = {
             apiKey: "TU_API_KEY",
             authDomain: "retornos-anam-altamira.firebaseapp.com",
@@ -127,6 +126,7 @@
         const app = initializeApp(firebaseConfig);
         const db = getDatabase(app);
 
+        // --- REFERENCIAS ---
         const form = document.getElementById("formRetorno");
         const tipo = document.getElementById("tipo");
         const mercanciaDiv = document.getElementById("mercanciaDiv");
@@ -135,25 +135,25 @@
         const correosBase = ["juan.reyesg@anam.gob.mx", "vyc.altamira@anam.gob.mx", "alejandra.munoz@anam.gob.mx", "jorge.silva@anam.gob.mx", "abraham.gomez@anam.gob.mx", "daniel.santosh@anam.gob.mx", "christian.monrreal@anam.gob.mx", "monica.becerra@anam.gob.mx", "anahi.santiago@anam.gob.mx"];
         const correosExtra = ["emilio.garin@anam.gob.mx", "sergio.diazr@anam.gob.mx", "oscar.narro@anam.gob.mx"];
 
+        // --- RELOJ Y FECHA ---
         function actualizarReloj() { document.getElementById("fechaHora").textContent = new Date().toLocaleString(); }
         setInterval(actualizarReloj, 1000); actualizarReloj();
         document.getElementById("fechaConsulta").value = new Date().toISOString().split("T")[0];
 
+        // --- VALIDACIÓN DINÁMICA ---
         form.addEventListener("input", () => { btnGenerar.disabled = !form.checkValidity(); });
-
         tipo.addEventListener("change", () => {
             const esRevision = (tipo.value === "revision");
             mercanciaDiv.classList.toggle("hidden", !esRevision);
             document.getElementById("mercancia").required = esRevision;
         });
 
-        // --- LÓGICA DE ENVÍO CORREGIDA ---
+        // --- ENVÍO Y APERTURA ---
         form.addEventListener("submit", async (e) => {
             e.preventDefault();
             btnGenerar.disabled = true;
-            btnGenerar.textContent = "PROCESANDO...";
 
-            // 1. Generar Folio
+            // 1. Folio en Firebase
             const hoy = new Date();
             const idFecha = hoy.getFullYear() + ("0" + (hoy.getMonth() + 1)).slice(-2) + ("0" + hoy.getDate()).slice(-2);
             const refCont = ref(db, 'contadorFolios/' + idFecha);
@@ -161,7 +161,7 @@
             const folioFinal = `RET-${idFecha}-${res.snapshot.val().toString().padStart(3, "0")}`;
             document.getElementById("folio").textContent = folioFinal;
 
-            // 2. Cuerpo del Mensaje e Interfaz
+            // 2. Construcción de Correo
             const saludo = (hoy.getHours() < 12) ? "Buenos días" : (hoy.getHours() < 19) ? "Buenas tardes" : "Buenas noches";
             const op = document.getElementById("operacion").value;
             const placasVal = document.getElementById("placas").value;
@@ -182,39 +182,39 @@
                 cuerpo += "El presente correo es para solicitar la apertura " + area + " para el retorno al vehículo con las placas siguientes:\n\nPLACAS:\n" + placasVal + "\n\nTipo de retorno:\n" + tipo.options[tipo.selectedIndex].text + "\n\nGracias.\n\nSaludos cordiales,\n" + operadorVal + "\nMódulos\nANAM Altamira";
             }
 
-            // 3. Guardar Firebase
+            // 3. Guardar en DB
             await push(ref(db, "retornos"), { folio: folioFinal, fecha: hoy.toISOString(), operador: operadorVal, placas: placasVal, tipo: tipo.value });
 
-            // 4. ESTRATEGIA ANTI-ERROR: Uso de Mailto como enlace limpio
-            let destinatarios = (tipo.value === "revision") ? correosBase.concat(correosExtra) : correosBase;
-            const to = destinatarios.join(",");
+            // 4. Apertura Segura (Evita error de redirección)
+            const to = (tipo.value === "revision") ? correosBase.concat(correosExtra).join(",") : correosBase.join(",");
             const subject = encodeURIComponent(`${op} - ${tipo.options[tipo.selectedIndex].text}`);
             const body = encodeURIComponent(cuerpo);
+            
+            // Abrimos Outlook
+            window.location.href = `ms-outlook://compose?to=${to}&subject=${subject}&body=${body}`;
 
-            // Intentamos abrir Outlook directamente. Si falla el protocolo ms-outlook, el navegador usará mailto.
-            const outlookUrl = `ms-outlook://compose?to=${to}&subject=${subject}&body=${body}`;
-            const mailtoUrl = `mailto:${to}?subject=${subject}&body=${body}`;
+            // Fallback por si Outlook no responde rápido
+            setTimeout(() => { if (!document.hidden) window.location.href = `mailto:${to}?subject=${subject}&body=${body}`; }, 800);
 
-            // Ejecutamos la redirección
-            window.location.href = outlookUrl;
-
-            // Si a los 500ms no ha salido de la página, usamos el mailto estándar
-            setTimeout(() => {
-                if (!document.hidden) {
-                    window.location.href = mailtoUrl;
-                }
-            }, 500);
-
-            // 5. REFRESCADO AUTOMÁTICO
+            // 5. LIMPIEZA AUTOMÁTICA
             setTimeout(() => {
                 form.reset();
                 document.getElementById("folio").textContent = "--";
                 mercanciaDiv.classList.add("hidden");
-                btnGenerar.textContent = "Generar y Abrir Outlook";
                 btnGenerar.disabled = true;
-            }, 1500);
+            }, 1000);
         });
 
+        // --- REGISTRO DEL SERVICE WORKER (PWA) ---
+        if ('serviceWorker' in navigator) {
+            window.addEventListener('load', () => {
+                navigator.serviceWorker.register('./service-worker.js')
+                    .then(reg => console.log('PWA: Service Worker Activo'))
+                    .catch(err => console.log('PWA: Error', err));
+            });
+        }
+
+        // --- CONSULTAS ---
         window.consultarPlacas = async function() {
             const snap = await get(ref(db, "retornos"));
             const fecha = document.getElementById("fechaConsulta").value;
