@@ -20,7 +20,6 @@
             border-top: 8px solid #1E5B4F; overflow: hidden;
         }
 
-        /* Marca de agua de fondo */
         .container::before {
             content: ""; position: absolute; inset: 0;
             background: url("logo-anam.png") center center no-repeat;
@@ -41,7 +40,7 @@
 
         label { font-weight: bold; font-size: 14px; display: block; margin-top: 10px; }
         select, input, textarea { width: 100%; padding: 10px; margin: 6px 0 14px; border-radius: 6px; border: 1px solid #ccc; font-size: 14px; box-sizing: border-box; }
-        #placas { text-transform: uppercase; font-family: monospace; height: 80px; }
+        #placas { text-transform: uppercase; font-family: monospace; height: 100px; }
 
         .btn-main { background: #1E5B4F; color: #fff; padding: 14px; border: none; width: 100%; border-radius: 6px; font-size: 15px; cursor: pointer; font-weight: bold; margin-top: 6px; }
         .btn-main:disabled { background: #999; cursor: not-allowed; opacity: 0.6; }
@@ -53,16 +52,16 @@
         th { background: #611232; color: #fff; }
         .footer { text-align: center; font-size: 11px; color: #98989A; margin: 20px 0; }
 
-        /* Estilos del Modal */
-        .modal { display: none; position: fixed; z-index: 999; inset: 0; background: rgba(0,0,0,0.6); justify-content: center; align-items: center; padding: 20px; }
-        .modal-content { background: #fff; padding: 25px; border-radius: 12px; width: 100%; max-width: 400px; text-align: center; box-shadow: 0 10px 25px rgba(0,0,0,0.2); }
-        .modal h2 { color: #611232; margin-top: 0; }
-        .modal button { width: 100%; margin-top: 10px; padding: 12px; border: none; border-radius: 6px; font-weight: bold; cursor: pointer; font-size: 14px; }
+        .modal { display: none; position: fixed; z-index: 999; inset: 0; background: rgba(0,0,0,0.7); justify-content: center; align-items: center; padding: 20px; }
+        .modal-content { background: #fff; padding: 25px; border-radius: 12px; width: 100%; max-width: 400px; text-align: center; box-shadow: 0 10px 25px rgba(0,0,0,0.3); }
+        .modal h2 { color: #611232; margin-top: 0; font-size: 20px; }
+        .modal p { font-size: 14px; color: #555; margin-bottom: 20px; }
+        .modal button { width: 100%; margin-top: 10px; padding: 15px; border: none; border-radius: 8px; font-weight: bold; cursor: pointer; font-size: 15px; }
         
-        .btn-outlook { background: #0078D4; color: white; }
+        .btn-outlook { background: #0078D4; color: white; border-bottom: 4px solid #005a9e !important; }
         .btn-mail { background: #1E5B4F; color: white; }
         .btn-copy { background: #A57F2C; color: white; }
-        .btn-close { background: #ccc; color: #333; }
+        .btn-close { background: #eeeeee; color: #333; }
     </style>
 </head>
 
@@ -121,12 +120,13 @@
 
     <div id="modal" class="modal">
         <div class="modal-content">
-            <h2>Acción requerida</h2>
-            <p>Selecciona el método para enviar el correo:</p>
-            <button class="btn-outlook" onclick="abrirOutlook()">Abrir en Outlook (App)</button>
-            <button class="btn-mail" onclick="abrirCorreoNormal()">Correo Predeterminado</button>
-            <button class="btn-copy" onclick="copiarCorreo()">Copiar Texto</button>
-            <button class="btn-close" onclick="cerrarModal()">Cancelar</button>
+            <h2>Enviar Solicitud</h2>
+            <p>Se ha generado el folio. ¿Cómo deseas proceder?</p>
+            
+            <button class="btn-outlook" onclick="intentarOutlook()">1. ABRIR APP OUTLOOK</button>
+            <button class="btn-mail" onclick="abrirCorreoNormal()">2. Correo Predeterminado</button>
+            <button class="btn-copy" onclick="copiarCorreo()">3. Copiar Texto (Manual)</button>
+            <button class="btn-close" onclick="cerrarModal()">Cerrar</button>
         </div>
     </div>
 
@@ -134,7 +134,6 @@
         import { initializeApp } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-app.js";
         import { getDatabase, ref, push, runTransaction, get } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-database.js";
 
-        // Configuración Firebase
         const firebaseConfig = {
             apiKey: "TU_API_KEY",
             authDomain: "retornos-anam-altamira.firebaseapp.com",
@@ -153,38 +152,28 @@
         const mercanciaDiv = document.getElementById("mercanciaDiv");
         const btnGenerar = document.getElementById("btnGenerar");
 
-        // Variables Globales para envío
-        window.correosGlobal = "";
-        window.subjectGlobal = "";
-        window.cuerpoGlobal = "";
-        window.mailtoGlobal = "";
+        window.datosEnvio = { to: "", sub: "", body: "", mailto: "" };
 
         const correosBase = ["juan.reyesg@anam.gob.mx","vyc.altamira@anam.gob.mx","alejandra.munoz@anam.gob.mx","jorge.silva@anam.gob.mx","abraham.gomez@anam.gob.mx","daniel.santosh@anam.gob.mx","christian.monrreal@anam.gob.mx","monica.becerra@anam.gob.mx","anahi.santiago@anam.gob.mx"];
         const correosExtra = ["emilio.garin@anam.gob.mx","sergio.diazr@anam.gob.mx","oscar.narro@anam.gob.mx"];
 
-        // Reloj
         function actualizarReloj(){ document.getElementById("fechaHora").textContent = new Date().toLocaleString(); }
         setInterval(actualizarReloj, 1000); actualizarReloj();
         document.getElementById("fechaConsulta").value = new Date().toISOString().split("T")[0];
 
-        // Validar formulario
         form.addEventListener("input", () => { btnGenerar.disabled = !form.checkValidity(); });
-        
         tipo.addEventListener("change", () => {
             const esRevision = (tipo.value === "revision");
             mercanciaDiv.classList.toggle("hidden", !esRevision);
             document.getElementById("mercancia").required = esRevision;
         });
 
-        // Proceso de Envío
         form.addEventListener("submit", async (e) => {
             e.preventDefault();
             btnGenerar.disabled = true;
 
             const hoy = new Date();
             const idFecha = hoy.getFullYear() + ("0" + (hoy.getMonth() + 1)).slice(-2) + ("0" + hoy.getDate()).slice(-2);
-            
-            // Transacción de Folio
             const refCont = ref(db, 'contadorFolios/' + idFecha);
             const res = await runTransaction(refCont, (c) => (c || 0) + 1);
             const folioFinal = `RET-${idFecha}-${res.snapshot.val().toString().padStart(3, "0")}`;
@@ -196,7 +185,6 @@
             const operadorVal = document.getElementById("operador").value;
             const mercaVal = document.getElementById("mercancia").value;
 
-            // Construcción del Cuerpo
             let cuerpo = saludo + ",\n\n";
             if(tipo.value === "revision"){
                 cuerpo += "Por medio del presente, se solicita el valioso apoyo de la Subdirección de Vigilancia y Control para realizar la apertura del carril de excesos de exportación. Lo anterior, con la finalidad de permitir el ingreso y posicionamiento de la unidad con exceso de dimensiones en la explanada de vacíos.\n\nSe les solicita de la manera más atenta confirmar en cuanto la unidad se encuentre debidamente posicionada.\n\nPLACAS:\n" + placasVal + "\n\nMERCANCÍA:\n" + mercaVal + "\n\nPosteriormente, la unidad será inspeccionada por el equipo ZBV del Departamento de Equipos No Intrusivos en la explanada de vacíos de importación.\n\nDe igual forma, se solicita dar aviso al personal del módulo una vez que la unidad haya sido revisada, así como responder a este correo electrónico al concluir la inspección.\n\nSin más por el momento, quedo atento a sus comentarios.\n\nGracias.\n\nSaludos cordiales,\n" + operadorVal + "\nMódulos\nANAM Altamira";
@@ -205,81 +193,69 @@
                 cuerpo += "El presente correo es para solicitar la apertura " + area + " para el retorno al vehículo con las placas siguientes:\n\nPLACAS:\n" + placasVal + "\n\nTipo de retorno:\n" + tipo.options[tipo.selectedIndex].text + "\n\nGracias.\n\nSaludos cordiales,\n" + operadorVal + "\nMódulos\nANAM Altamira";
             }
 
-            // Guardar en Firebase
             await push(ref(db, "retornos"), { folio: folioFinal, fecha: hoy.toISOString(), operador: operadorVal, placas: placasVal, tipo: tipo.value });
 
-            // Preparar variables de envío
-            const to = (tipo.value === "revision") ? correosBase.concat(correosExtra).join(",") : correosBase.join(",");
-            const subject = `${op} - ${tipo.options[tipo.selectedIndex].text}`;
-            
-            window.correosGlobal = to;
-            window.subjectGlobal = subject;
-            window.cuerpoGlobal = cuerpo;
-            window.mailtoGlobal = `mailto:${to}?subject=${encodeURIComponent(subject)}&body=${encodeURIComponent(cuerpo)}`;
+            window.datosEnvio.to = (tipo.value === "revision") ? correosBase.concat(correosExtra).join(",") : correosBase.join(",");
+            window.datosEnvio.sub = `${op} - ${tipo.options[tipo.selectedIndex].text}`;
+            window.datosEnvio.body = cuerpo;
+            window.datosEnvio.mailto = `mailto:${window.datosEnvio.to}?subject=${encodeURIComponent(window.datosEnvio.sub)}&body=${encodeURIComponent(window.datosEnvio.body)}`;
 
-            // Mostrar Modal
             document.getElementById("modal").style.display = "flex";
 
-            // Limpiar Formulario tras breve pausa
             setTimeout(() => {
                 form.reset();
                 document.getElementById("folio").textContent = "--";
                 mercanciaDiv.classList.add("hidden");
                 btnGenerar.disabled = true;
-            }, 1500);
+            }, 1000);
         });
 
-        /* === FUNCIONES DE SALIDA (ASIGNADAS A WINDOW PARA EL MODAL) === */
+        /* === FUNCIONES DE ACCIÓN === */
 
-        window.abrirOutlook = function() {
-            const to = window.correosGlobal;
-            const sub = encodeURIComponent(window.subjectGlobal);
-            const body = encodeURIComponent(window.cuerpoGlobal);
+        window.intentarOutlook = function() {
+            const to = window.datosEnvio.to;
+            const sub = encodeURIComponent(window.datosEnvio.sub);
+            const body = encodeURIComponent(window.datosEnvio.body);
 
-            const isIOS = /iPhone|iPad|iPod/i.test(navigator.userAgent);
-            const isAndroid = /Android/i.test(navigator.userAgent);
+            // Intentamos el enlace directo más sencillo. 
+            // Si esto falla en móvil, el navegador suele mostrar el error de redirección.
+            // Para evitarlo, usamos un elemento <a> temporal.
+            const urlApp = `ms-outlook://compose?to=${to}&subject=${sub}&body=${body}`;
+            
+            const link = document.createElement('a');
+            link.href = urlApp;
+            document.body.appendChild(link);
+            link.click();
+            document.body.removeChild(link);
 
-            if (isAndroid) {
-                // Comando Android Intent: Fuerza a abrir la APP si está instalada.
-                const androidIntent = `intent://compose?to=${to}&subject=${sub}&body=${body}#Intent;scheme=ms-outlook;package=com.microsoft.office.outlook;end`;
-                window.location.href = androidIntent;
-            } 
-            else if (isIOS) {
-                // Universal Link de Office + Esquema ms-outlook
-                // Intentamos abrir la app directamente, si falla, va al link de Outlook Web que iPhone reconoce.
-                const outlookWeb = `https://outlook.office.com/mail/deeplink/compose?to=${to}&subject=${sub}&body=${body}`;
-                const outlookApp = `ms-outlook://compose?to=${to}&subject=${sub}&body=${body}`;
-                
-                // Intento con <a> invisible para saltar bloqueos
-                const a = document.createElement('a');
-                a.href = outlookApp;
-                document.body.appendChild(a);
-                a.click();
-                
-                setTimeout(() => {
-                    if (document.hasFocus()) { window.location.href = outlookWeb; }
-                }, 800);
-            } 
-            else {
-                // PC / Escritorio
-                window.location.href = window.mailtoGlobal;
-            }
+            // Si después de 1 segundo el usuario sigue aquí (no saltó a la app), 
+            // usamos el respaldo de Outlook Web.
+            setTimeout(() => {
+                if (!document.hidden) {
+                    const urlWeb = `https://outlook.office.com/mail/deeplink/compose?to=${to}&subject=${sub}&body=${body}`;
+                    window.location.href = urlWeb;
+                }
+            }, 1000);
         };
 
         window.abrirCorreoNormal = function() {
-            window.location.href = window.mailtoGlobal;
+            window.location.href = window.datosEnvio.mailto;
         };
 
         window.copiarCorreo = function() {
-            navigator.clipboard.writeText(window.cuerpoGlobal);
-            alert("Texto copiado al portapapeles. Ya puedes pegarlo en Outlook.");
+            const el = document.createElement('textarea');
+            el.value = window.datosEnvio.body;
+            document.body.appendChild(el);
+            el.select();
+            document.execCommand('copy');
+            document.body.removeChild(el);
+            alert("Texto copiado. Abre Outlook manualmente y pégalo.");
         };
 
         window.cerrarModal = function() {
             document.getElementById("modal").style.display = "none";
         };
 
-        // Historial y Consultas
         window.consultarPlacas = async function(){
             const snap = await get(ref(db, "retornos"));
             const fecha = document.getElementById("fechaConsulta").value;
@@ -297,7 +273,7 @@
             const ws = XLSX.utils.json_to_sheet(data);
             const wb = XLSX.utils.book_new();
             XLSX.utils.book_append_sheet(wb, ws, "Registros");
-            XLSX.writeFile(wb, "Reporte_ANAM_Retornos.xlsx");
+            XLSX.writeFile(wb, "Reporte_ANAM.xlsx");
         }
     </script>
 </body>
