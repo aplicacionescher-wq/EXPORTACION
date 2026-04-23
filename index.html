@@ -179,10 +179,7 @@
 
             const saludo = (hoy.getHours() < 12) ? "Buenos días" : (hoy.getHours() < 19) ? "Buenas tardes" : "Buenas noches";
             const op = document.getElementById("operacion").value;
-            
-            // MODIFICACIÓN: placasVal ahora siempre será MAYÚSCULAS
             const placasVal = document.getElementById("placas").value.toUpperCase();
-            
             const operadorVal = document.getElementById("operador").value;
             const mercaVal = document.getElementById("mercancia").value;
             const tipoText = tipoSelect.options[tipoSelect.selectedIndex].text;
@@ -217,14 +214,24 @@
 
             const to = (tipoSelect.value === "revision") ? correosBase + correosExtra : correosBase;
             const subject = `${op} - ${tipoText}`;
-            const mailtoUrl = `mailto:${to}?subject=${encodeURIComponent(subject)}&body=${encodeURIComponent(cuerpo)}`;
             
-            document.getElementById("btnOutlookReal").href = mailtoUrl;
+            // DETECCIÓN DE IPHONE / IPAD
+            const isApple = /iPhone|iPad|iPod/i.test(navigator.userAgent);
+            let finalUrl = "";
+
+            if (isApple) {
+                // Esquema exclusivo de la APP de Outlook para iOS
+                finalUrl = `ms-outlook://compose?to=${to}&subject=${encodeURIComponent(subject)}&body=${encodeURIComponent(cuerpo)}`;
+            } else {
+                // mailto estándar para Android y PC
+                finalUrl = `mailto:${to}?subject=${encodeURIComponent(subject)}&body=${encodeURIComponent(cuerpo)}`;
+            }
+            
+            document.getElementById("btnOutlookReal").href = finalUrl;
             document.getElementById("modalTitle").textContent = "Folio: " + folioFinal;
             document.getElementById("modal").style.display = "flex";
         });
 
-        // FUNCIÓN: LIMPIAR Y CERRAR (SE EJECUTA AL CERRAR EL MODAL)
         document.getElementById("btnCerrarModal").onclick = () => {
             document.getElementById("modal").style.display = "none";
             form.reset(); 
@@ -234,12 +241,10 @@
             fechaConsultaInput.value = hoyStr; 
         };
 
-        // FUNCIÓN: COPIAR
         document.getElementById("btnCopiar").onclick = () => {
             navigator.clipboard.writeText(cuerpoActual).then(() => alert("Copiado al portapapeles."));
         };
 
-        // FUNCIÓN: CONSULTAR REGISTROS (CORREGIDA)
         document.getElementById("btnConsultar").onclick = async () => {
             const snap = await get(ref(db, "retornos"));
             const fechaBuscada = fechaConsultaInput.value;
@@ -269,7 +274,6 @@
             }
         };
 
-        // FUNCIÓN: EXPORTAR EXCEL
         document.getElementById("btnExportar").onclick = async () => {
             const snap = await get(ref(db, "retornos"));
             let data = [];
