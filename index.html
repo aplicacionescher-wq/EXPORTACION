@@ -36,8 +36,7 @@
 
         .logo-gota img { width: 65px; }
         .title { text-align: center; color: #611232; font-size: 18px; font-weight: bold; margin: 15px 0; }
-        h3 { color: #611232; border-bottom: 2px solid #A57F2C; padding-bottom: 6px; font-size: 15px; }
-
+        
         label { font-weight: bold; font-size: 14px; display: block; margin-top: 10px; }
         select, input, textarea { width: 100%; padding: 10px; margin: 6px 0 14px; border-radius: 6px; border: 1px solid #ccc; font-size: 14px; box-sizing: border-box; }
         #placas { text-transform: uppercase; font-family: monospace; height: 80px; }
@@ -50,10 +49,9 @@
         table { width: 100%; border-collapse: collapse; margin-top: 15px; background: #fff; }
         th, td { border: 1px solid #ccc; padding: 8px; font-size: 12px; text-align: center; }
         th { background: #611232; color: #fff; }
-
+        
         .modal { display: none; position: fixed; z-index: 999; inset: 0; background: rgba(0,0,0,0.85); justify-content: center; align-items: center; padding: 20px; }
         .modal-content { background: #fff; padding: 25px; border-radius: 15px; width: 100%; max-width: 400px; text-align: center; }
-        .modal h2 { color: #611232; margin-top: 0; font-size: 20px; }
         
         .link-button { 
             display: block; text-decoration: none; background: #0078D4; color: white; 
@@ -61,6 +59,7 @@
         }
         .btn-copy { background: #A57F2C; color: white; width: 100%; padding: 16px; border: none; border-radius: 8px; font-weight: bold; margin-top: 12px; cursor: pointer; }
         .btn-close { background: #f0f0f0; color: #333; width: 100%; padding: 12px; border: none; border-radius: 8px; margin-top: 12px; cursor: pointer; }
+        .footer { text-align: center; font-size: 11px; color: #98989A; margin: 20px 0; }
     </style>
 </head>
 
@@ -81,7 +80,7 @@
             </select>
 
             <label>Operador de Módulos</label>
-            <input type="text" id="operador" placeholder="Tu nombre completo" required>
+            <input type="text" id="operador" placeholder="Nombre completo" required>
 
             <label>Tipo de Solicitud</label>
             <select id="tipo" required>
@@ -93,14 +92,14 @@
             </select>
 
             <label>Placas</label>
-            <textarea id="placas" placeholder="Ej: 12ABC34" required></textarea>
+            <textarea id="placas" placeholder="Introduce placas" required></textarea>
 
             <div id="mercanciaDiv" class="hidden">
                 <label>Descripción de la Mercancía</label>
-                <textarea id="mercancia" placeholder="Detalle de la carga sobredimensionada"></textarea>
+                <textarea id="mercancia" placeholder="Detalle la mercancía"></textarea>
             </div>
 
-            <button type="submit" id="btnGenerar" class="btn-main" disabled>Generar Folio</button>
+            <button type="submit" id="btnGenerar" class="btn-main" disabled>Generar y Enviar</button>
 
             <hr style="margin: 30px 0; border: 0; border-top: 1px solid #ddd;">
             
@@ -115,8 +114,8 @@
 
     <div id="modal" class="modal">
         <div class="modal-content">
-            <h2 id="modalTitle">Folio Generado</h2>
-            <p>Datos guardados. Toca para abrir Outlook:</p>
+            <h2 id="modalTitle" style="color: #611232;">Folio Generado</h2>
+            <p>Se ha guardado el registro. Toca el botón para abrir Outlook:</p>
             
             <a id="btnOutlookReal" class="link-button" href="#">ABRIR EN OUTLOOK</a>
             
@@ -124,6 +123,8 @@
             <button class="btn-close" id="btnCerrarModal">LIMPIAR Y CERRAR</button>
         </div>
     </div>
+
+    <div class="footer">© 2026 Agencia Nacional de Aduanas de México</div>
 
     <script type="module">
         import { initializeApp } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-app.js";
@@ -179,7 +180,7 @@
 
             const saludo = (hoy.getHours() < 12) ? "Buenos días" : (hoy.getHours() < 19) ? "Buenas tardes" : "Buenas noches";
             const op = document.getElementById("operacion").value;
-            const placasVal = document.getElementById("placas").value.toUpperCase();
+            const placasVal = document.getElementById("placas").value.toUpperCase(); // SIEMPRE MAYÚSCULAS
             const operadorVal = document.getElementById("operador").value;
             const mercaVal = document.getElementById("mercancia").value;
             const tipoText = tipoSelect.options[tipoSelect.selectedIndex].text;
@@ -213,38 +214,37 @@
             });
 
             const to = (tipoSelect.value === "revision") ? correosBase + correosExtra : correosBase;
-            const subject = `${op} - ${tipoText}`;
+            const subject = encodeURIComponent(`${op} - ${tipoText}`);
+            const bodyEncoded = encodeURIComponent(cuerpo);
             
-            // DETECCIÓN DE IPHONE / IPAD
+            // LÓGICA DE APERTURA: ms-outlook para iPhone, mailto de respaldo
             const isApple = /iPhone|iPad|iPod/i.test(navigator.userAgent);
-            let finalUrl = "";
-
-            if (isApple) {
-                // Esquema exclusivo de la APP de Outlook para iOS
-                finalUrl = `ms-outlook://compose?to=${to}&subject=${encodeURIComponent(subject)}&body=${encodeURIComponent(cuerpo)}`;
-            } else {
-                // mailto estándar para Android y PC
-                finalUrl = `mailto:${to}?subject=${encodeURIComponent(subject)}&body=${encodeURIComponent(cuerpo)}`;
-            }
+            const btnOutlook = document.getElementById("btnOutlookReal");
             
-            document.getElementById("btnOutlookReal").href = finalUrl;
+            if (isApple) {
+                btnOutlook.href = `ms-outlook://compose?to=${to}&subject=${subject}&body=${bodyEncoded}`;
+            } else {
+                btnOutlook.href = `mailto:${to}?subject=${subject}&body=${bodyEncoded}`;
+            }
+
             document.getElementById("modalTitle").textContent = "Folio: " + folioFinal;
             document.getElementById("modal").style.display = "flex";
         });
 
+        // BOTONES DEL MODAL
         document.getElementById("btnCerrarModal").onclick = () => {
             document.getElementById("modal").style.display = "none";
             form.reset(); 
             document.getElementById("folio").textContent = "--";
             mercanciaDiv.classList.add("hidden");
             btnGenerar.disabled = true;
-            fechaConsultaInput.value = hoyStr; 
         };
 
         document.getElementById("btnCopiar").onclick = () => {
-            navigator.clipboard.writeText(cuerpoActual).then(() => alert("Copiado al portapapeles."));
+            navigator.clipboard.writeText(cuerpoActual).then(() => alert("Texto copiado."));
         };
 
+        // CONSULTA Y EXPORTACIÓN
         document.getElementById("btnConsultar").onclick = async () => {
             const snap = await get(ref(db, "retornos"));
             const fechaBuscada = fechaConsultaInput.value;
@@ -256,35 +256,29 @@
                     const v = d.val();
                     if (v.fecha && v.fecha.startsWith(fechaBuscada)) {
                         const hora = new Date(v.fecha).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' });
-                        html += `<tr>
-                            <td>${hora}</td>
-                            <td>${v.folio || 'N/A'}</td>
-                            <td>${v.operador}</td>
-                            <td>${v.placas}</td>
-                        </tr>`;
+                        html += `<tr><td>${hora}</td><td>${v.folio || 'N/A'}</td><td>${v.operador}</td><td>${v.placas}</td></tr>`;
                         contador++;
                     }
                 });
             }
-
-            if (contador === 0) {
-                document.getElementById("tablaResultados").innerHTML = "<p style='text-align:center; font-size:12px; color:red; margin-top:10px;'>No hay registros en esta fecha.</p>";
-            } else {
-                document.getElementById("tablaResultados").innerHTML = html + "</table>";
-            }
+            document.getElementById("tablaResultados").innerHTML = contador > 0 ? html + "</table>" : "<p style='text-align:center; font-size:12px; color:red; margin-top:10px;'>Sin registros.</p>";
         };
 
         document.getElementById("btnExportar").onclick = async () => {
             const snap = await get(ref(db, "retornos"));
-            let data = [];
-            snap.forEach(d => data.push(d.val()));
-            if(data.length === 0) return alert("No hay datos para exportar");
+            let data = []; snap.forEach(d => data.push(d.val()));
             const ws = XLSX.utils.json_to_sheet(data);
             const wb = XLSX.utils.book_new();
             XLSX.utils.book_append_sheet(wb, ws, "Registros");
-            XLSX.writeFile(wb, "Reporte_Retornos_Altamira.xlsx");
+            XLSX.writeFile(wb, "Reporte_ANAM.xlsx");
         };
 
+        // REGISTRO DE SERVICE WORKER (PWA)
+        if ('serviceWorker' in navigator) {
+            window.addEventListener('load', () => {
+                navigator.serviceWorker.register('./service-worker.js').catch(err => console.log('Error SW', err));
+            });
+        }
     </script>
 </body>
 </html>
