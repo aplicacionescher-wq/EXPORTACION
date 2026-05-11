@@ -1,1 +1,95 @@
-sin conexion
+<!DOCTYPE html>
+<html lang="es">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Sitio Fuera de Línea</title>
+
+  <style>
+    *{
+      margin:0;
+      padding:0;
+      box-sizing:border-box;
+      font-family: Arial, Helvetica, sans-serif;
+    }
+
+    body{
+      background:#0f172a;
+      color:white;
+      height:100vh;
+      display:flex;
+      align-items:center;
+      justify-content:center;
+      text-align:center;
+      overflow:hidden;
+    }
+
+    .container{
+      max-width:600px;
+      padding:40px;
+      border-radius:20px;
+      background:rgba(255,255,255,0.05);
+      backdrop-filter: blur(10px);
+      box-shadow:0 0 30px rgba(0,0,0,0.4);
+      animation:fadeIn 1s ease;
+    }
+
+    h1{
+      font-size:3rem;
+      margin-bottom:20px;
+      color:#f8fafc;
+    }
+
+    p{
+      font-size:1.2rem;
+      color:#cbd5e1;
+      line-height:1.6;
+    }
+
+    .status{
+      margin-top:25px;
+      display:inline-block;
+      padding:12px 22px;
+      border-radius:999px;
+      background:#dc2626;
+      color:white;
+      font-weight:bold;
+      animation:pulse 1.5s infinite;
+    }
+
+    @keyframes pulse{
+      0%{transform:scale(1);}
+      50%{transform:scale(1.05);}
+      100%{transform:scale(1);}
+    }
+
+    @keyframes fadeIn{
+      from{
+        opacity:0;
+        transform:translateY(20px);
+      }
+      to{
+        opacity:1;
+        transform:translateY(0);
+      }
+    }
+  </style>
+</head>
+
+<body>
+
+  <div class="container">
+    <h1>Sitio Fuera de Línea</h1>
+
+    <p>
+      El contenido ya no se encuentra disponible.<br>
+      El servidor se encuentra temporalmente fuera de servicio.
+    </p>
+
+    <div class="status">
+      OFFLINE
+    </div>
+  </div>
+
+</body>
+</html>
